@@ -15,6 +15,8 @@
     <color name="night_warm_accent">#C9AE7D</color>
     <color name="text_primary">#F5F2EB</color>
     <color name="text_secondary">#B1B0B0</color>
+    <color name="accent_blue">#87B9EA</color>
+    <color name="divider_subtle">#1FFFFFFF</color>
 
     <!-- Day Palette — Warm Minimal -->
     <color name="day_bg">#F2F0EB</color>

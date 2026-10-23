@@ -1,0 +1,19 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <!-- Sun Behind Cloud -->
+    <path
+        android:fillColor="#FFCC00"
+        android:pathData="M20,20m-7,0a7,7 0,1 1,14 0a7,7 0,1 1,-14 0" />
+    <path
+        android:strokeColor="#FFCC00"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M20,8 L20,10 M10,20 L8,20 M12,12 L10.5,10.5 M28,12 L29.5,10.5 M28,28 L29.5,29.5" />
+    <!-- Foreground Cloud -->
+    <path
+        android:fillColor="#E5E9F0"
+        android:pathData="M38,36H18c-3.9,0 -7,-3.1 -7,-7 0,-3.4 2.4,-6.2 5.8,-6.8 1.2,-4 4.9,-7.2 9.4,-7.2 4.8,0 8.8,3.6 9.7,8.2 3.2,0.6 5.8,3.4 5.8,6.8 0,3.9 -3.1,7 -7,7z" />
+</vector>

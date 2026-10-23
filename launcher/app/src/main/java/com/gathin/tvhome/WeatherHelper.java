@@ -5,19 +5,20 @@ import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.Looper;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.text.SimpleDateFormat;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * Lean, single-provider weather helper powered by Open-Meteo with local SharedPreferences caching.
- * Designed for 0ms cold-start display and low memory overhead on Android TV.
+ * Lean weather helper with Open-Meteo multi-day daily forecast and raw JSON cache.
  */
 public class WeatherHelper {
     private static final String PREFS_NAME = "weather_cache";
@@ -35,51 +36,85 @@ public class WeatherHelper {
     }
 
     public static class WeatherData {
-        public double tempC, feelsLikeC, windKmh;
-        public int humidity, weatherCode;
+        public double currentTempC;
+        public int currentWeatherCode;
+        public DailyForecast[] daily; // index 0 = today, 1-4 = upcoming days
+
+        // Backwards compatibility aliases for screensaver and secondary activities
+        public double tempC;
+        public double feelsLikeC;
+        public int humidity = 0;
+        public double windKmh = 0;
+
+        public static class DailyForecast {
+            public double maxC, minC;
+            public int weatherCode;
+            public int rainChancePercent;
+            public String dayLabel; // "Today", "Tomorrow", "Wed", etc.
+        }
 
         public static WeatherData fromJson(JSONObject json) throws Exception {
-            JSONObject current = json.getJSONObject("current");
             WeatherData d = new WeatherData();
-            d.tempC = current.getDouble("temperature_2m");
-            d.feelsLikeC = current.getDouble("apparent_temperature");
-            d.windKmh = current.getDouble("wind_speed_10m");
-            d.humidity = current.getInt("relative_humidity_2m");
-            d.weatherCode = current.getInt("weather_code");
+            JSONObject current = json.getJSONObject("current");
+            d.currentTempC = current.getDouble("temperature_2m");
+            d.currentWeatherCode = current.getInt("weather_code");
+            d.tempC = d.currentTempC;
+            d.feelsLikeC = d.currentTempC;
+
+            JSONObject dailyJson = json.getJSONObject("daily");
+            JSONArray maxArr = dailyJson.getJSONArray("temperature_2m_max");
+            JSONArray minArr = dailyJson.getJSONArray("temperature_2m_min");
+            JSONArray codeArr = dailyJson.getJSONArray("weather_code");
+            JSONArray rainArr = dailyJson.getJSONArray("precipitation_probability_max");
+            JSONArray dateArr = dailyJson.getJSONArray("time");
+
+            int count = Math.min(5, maxArr.length());
+            d.daily = new DailyForecast[count];
+            for (int i = 0; i < count; i++) {
+                DailyForecast f = new DailyForecast();
+                f.maxC = maxArr.getDouble(i);
+                f.minC = minArr.getDouble(i);
+                f.weatherCode = codeArr.getInt(i);
+                f.rainChancePercent = rainArr.getInt(i);
+                f.dayLabel = labelForDay(i, dateArr.getString(i));
+                d.daily[i] = f;
+            }
             return d;
         }
 
-        public String toJsonString() {
-            return "{\"tempC\":" + tempC + ",\"feelsLikeC\":" + feelsLikeC +
-                   ",\"windKmh\":" + windKmh + ",\"humidity\":" + humidity +
-                   ",\"weatherCode\":" + weatherCode + "}";
-        }
-
-        public static WeatherData fromCacheString(String s) throws Exception {
-            return fromJson(new JSONObject("{\"current\":" + s + "}"));
+        private static String labelForDay(int index, String isoDate) {
+            if (index == 0) return "Today";
+            if (index == 1) return "Tomorrow";
+            SimpleDateFormat in = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+            SimpleDateFormat out = new SimpleDateFormat("EEE", Locale.US);
+            try {
+                return out.format(in.parse(isoDate));
+            } catch (Exception e) {
+                return "";
+            }
         }
 
         public String getWeatherIcon() {
-            if (weatherCode == 0) return "☀️";
-            if (weatherCode <= 3) return "⛅";
-            if (weatherCode <= 48) return "🌫️";
-            if (weatherCode <= 67) return "🌧️";
-            if (weatherCode <= 77) return "❄️";
-            if (weatherCode <= 82) return "🌦️";
-            if (weatherCode <= 99) return "⛈️";
+            if (currentWeatherCode == 0) return "☀️";
+            if (currentWeatherCode <= 3) return "⛅";
+            if (currentWeatherCode <= 48) return "🌫️";
+            if (currentWeatherCode <= 67) return "🌧️";
+            if (currentWeatherCode <= 77) return "❄️";
+            if (currentWeatherCode <= 82) return "🌦️";
+            if (currentWeatherCode <= 99) return "⛈️";
             return "☀️";
         }
 
         public String getWeatherDescription() {
-            if (weatherCode == 0) return "Clear";
-            if (weatherCode == 1) return "Mainly Clear";
-            if (weatherCode == 2) return "Partly Cloudy";
-            if (weatherCode == 3) return "Overcast";
-            if (weatherCode <= 48) return "Foggy";
-            if (weatherCode <= 67) return "Rain";
-            if (weatherCode <= 77) return "Snow";
-            if (weatherCode <= 82) return "Showers";
-            if (weatherCode <= 99) return "Thunderstorm";
+            if (currentWeatherCode == 0) return "Clear";
+            if (currentWeatherCode == 1) return "Mainly Clear";
+            if (currentWeatherCode == 2) return "Partly Cloudy";
+            if (currentWeatherCode == 3) return "Overcast";
+            if (currentWeatherCode <= 48) return "Foggy";
+            if (currentWeatherCode <= 67) return "Rain";
+            if (currentWeatherCode <= 77) return "Snow";
+            if (currentWeatherCode <= 82) return "Showers";
+            if (currentWeatherCode <= 99) return "Thunderstorm";
             return "Clear";
         }
     }
@@ -96,16 +131,16 @@ public class WeatherHelper {
 
         if (cachedPayload != null && (System.currentTimeMillis() - cachedAt) < CACHE_TTL_MS) {
             try {
-                WeatherData cached = WeatherData.fromCacheString(cachedPayload);
+                WeatherData cached = WeatherData.fromJson(new JSONObject(cachedPayload));
                 cb.onResult(cached);
                 return; // fresh cache, skip network entirely
             } catch (Exception ignored) { /* fall through to network */ }
         }
 
-        // 2. Stale or missing cache — show stale cache immediately if present so UI is never blank
+        // 2. Stale cache — show immediately so UI is never blank
         if (cachedPayload != null) {
             try {
-                WeatherData cached = WeatherData.fromCacheString(cachedPayload);
+                WeatherData cached = WeatherData.fromJson(new JSONObject(cachedPayload));
                 cb.onResult(cached);
             } catch (Exception ignored) {}
         }
@@ -115,7 +150,9 @@ public class WeatherHelper {
                 String url = String.format(
                     Locale.US,
                     "https://api.open-meteo.com/v1/forecast?latitude=%.4f&longitude=%.4f" +
-                    "&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m",
+                    "&current=temperature_2m,weather_code" +
+                    "&daily=temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max" +
+                    "&timezone=auto&forecast_days=5",
                     lat, lon);
                 HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
                 conn.setConnectTimeout(5000);
@@ -127,11 +164,12 @@ public class WeatherHelper {
                 while ((line = reader.readLine()) != null) sb.append(line);
                 reader.close();
 
-                JSONObject json = new JSONObject(sb.toString());
+                String rawJson = sb.toString();
+                JSONObject json = new JSONObject(rawJson);
                 WeatherData data = WeatherData.fromJson(json);
 
                 prefs.edit()
-                     .putString(KEY_PAYLOAD, data.toJsonString())
+                     .putString(KEY_PAYLOAD, rawJson)
                      .putLong(KEY_TIMESTAMP, System.currentTimeMillis())
                      .apply();
 

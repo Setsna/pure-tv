@@ -44,6 +44,7 @@ import android.text.TextPaint;
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.KeyEvent;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
@@ -183,11 +184,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     public static Integer sTestHourOfDay = null;
     private String currentSsid = "";
 
-    // Weather Views
-    private View weatherCapsule;
-    private TextView tvTemp;
-    private TextView tvFeelsLike;
-    private TextView tvHumidityWind;
+    // Weather Views (Apple-widget-style)
+    private View weatherWidget;
+    private ImageView ivTodayIcon;
+    private TextView tvTodayTemp;
+    private TextView tvTodayCondition;
+    private TextView tvRainChance;
+    private LinearLayout dailyForecastRow;
     private TextView exploreHint;
 
     // Apple TV Aerial Idle Watchdog (5 minutes of inactivity on home screen)
@@ -334,14 +337,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             return true;
         });
 
-        // Keep focus on the top bar at its ends and route predictably to weatherCapsule or stay bounded
+        // Keep focus on the top bar at its ends and route predictably to weatherWidget or stay bounded
         View.OnKeyListener pillKeys = (v, keyCode, event) -> {
             if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
             if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
                 if (v.getId() == R.id.btnSettings) {
-                    View wc = findViewById(R.id.weatherCapsule);
-                    if (wc != null) {
-                        wc.requestFocus();
+                    View ww = findViewById(R.id.weatherWidget);
+                    if (ww != null) {
+                        ww.requestFocus();
                         return true;
                     }
                 }
@@ -356,9 +359,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                         || (v.getId() == R.id.btnWifi && btnInputs.getVisibility() != View.VISIBLE);
             }
             if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && v.getId() == R.id.btnSettings) {
-                View wc = findViewById(R.id.weatherCapsule);
-                if (wc != null) {
-                    wc.requestFocus();
+                View ww = findViewById(R.id.weatherWidget);
+                if (ww != null) {
+                    ww.requestFocus();
                     return true;
                 }
                 return true;
@@ -756,20 +759,22 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     }
 
     private void initWeatherViews() {
-        weatherCapsule = findViewById(R.id.weatherCapsule);
-        tvTemp = findViewById(R.id.tvTemp);
-        tvFeelsLike = findViewById(R.id.tvFeelsLike);
-        tvHumidityWind = findViewById(R.id.tvHumidityWind);
+        weatherWidget = findViewById(R.id.weatherWidget);
+        ivTodayIcon = findViewById(R.id.ivTodayIcon);
+        tvTodayTemp = findViewById(R.id.tvTodayTemp);
+        tvTodayCondition = findViewById(R.id.tvTodayCondition);
+        tvRainChance = findViewById(R.id.tvRainChance);
+        dailyForecastRow = findViewById(R.id.dailyForecastRow);
 
-        if (weatherCapsule != null) {
-            weatherCapsule.setFocusable(true);
-            weatherCapsule.setClickable(true);
-            weatherCapsule.setOnClickListener(v -> {
+        if (weatherWidget != null) {
+            weatherWidget.setFocusable(true);
+            weatherWidget.setClickable(true);
+            weatherWidget.setOnClickListener(v -> {
                 Intent intent = new Intent(this, WeatherGlassActivity.class);
                 startActivity(intent);
                 overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
             });
-            weatherCapsule.setOnKeyListener((v, keyCode, event) -> {
+            weatherWidget.setOnKeyListener((v, keyCode, event) -> {
                 if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
                 if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT || keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
                     if (btnSettings != null) btnSettings.requestFocus();
@@ -784,11 +789,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 }
                 return false;
             });
-            weatherCapsule.setOnFocusChangeListener((v, focused) -> {
-                float s = focused ? 1.04f : 1.0f;
+            weatherWidget.setOnFocusChangeListener((v, focused) -> {
+                float s = focused ? 1.03f : 1.0f;
                 v.animate().scaleX(s).scaleY(s).setDuration(150).start();
                 GradientDrawable gd = new GradientDrawable();
-                gd.setCornerRadius(24 * density);
+                gd.setCornerRadius(20 * density);
                 if (focused) {
                     gd.setColor(isDayMode ? 0x99FFFFFF : 0xE6262932);
                     gd.setStroke((int) (2 * density), isDayMode ? 0x99B79A63 : 0xB3C9AE7D);
@@ -801,42 +806,125 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
     }
 
-    private void refreshWeather() {
-        new WeatherHelper(this).fetchWeather(28.5983, 77.1897, new WeatherHelper.WeatherCallback() {
-            @Override
-            public void onResult(WeatherHelper.WeatherData data) {
-                if (isFinishing() || isDestroyed()) return;
-                if (tvTemp != null) {
-                    tvTemp.setText(Math.round(data.tempC) + "°");
-                    tvTemp.setTextColor(isDayMode ? 0xFF191A1F : 0xFFF5F2EB);
-                }
-                if (tvFeelsLike != null) {
-                    tvFeelsLike.setText("Feels " + Math.round(data.feelsLikeC) + "° · " + data.getWeatherDescription());
-                    tvFeelsLike.setTextColor(isDayMode ? 0xFF666973 : 0xFFB1B0B0);
-                }
-                if (tvHumidityWind != null) {
-                    tvHumidityWind.setText(data.humidity + "% · " + Math.round(data.windKmh) + " km/h");
-                    tvHumidityWind.setTextColor(isDayMode ? 0xFF666973 : 0xFFB1B0B0);
-                }
+    private void renderWeather(WeatherHelper.WeatherData data) {
+        if (data == null) return;
 
-                // Sync with Screensaver HUD
-                if (ssWeatherIcon != null) {
-                    ssWeatherIcon.setText(data.getWeatherIcon());
+        if (ivTodayIcon != null) {
+            ivTodayIcon.setImageResource(iconForWeatherCode(data.currentWeatherCode));
+        }
+        if (tvTodayTemp != null) {
+            tvTodayTemp.setText(Math.round(data.currentTempC) + "°");
+            tvTodayTemp.setTextColor(isDayMode ? 0xFF191A1F : 0xFFF5F2EB);
+        }
+        if (tvTodayCondition != null) {
+            tvTodayCondition.setText(conditionLabel(data.currentWeatherCode));
+            tvTodayCondition.setTextColor(isDayMode ? 0xFF666973 : 0xFFB1B0B0);
+        }
+
+        // Only show rain chance if genuinely likely — don't clutter with "5%" noise
+        if (tvRainChance != null) {
+            int todayRain = (data.daily != null && data.daily.length > 0) ? data.daily[0].rainChancePercent : 0;
+            if (todayRain >= 30) {
+                tvRainChance.setText(todayRain + "% rain");
+                tvRainChance.setVisibility(View.VISIBLE);
+            } else {
+                tvRainChance.setVisibility(View.GONE);
+            }
+        }
+
+        if (dailyForecastRow != null && data.daily != null) {
+            dailyForecastRow.removeAllViews();
+            for (int i = 1; i < data.daily.length; i++) { // skip index 0 (today already shown above)
+                WeatherHelper.WeatherData.DailyForecast f = data.daily[i];
+                View dayView = LayoutInflater.from(this).inflate(R.layout.weather_day_item, dailyForecastRow, false);
+                TextView tvDayLabel = dayView.findViewById(R.id.tvDayLabel);
+                ImageView ivDayIcon = dayView.findViewById(R.id.ivDayIcon);
+                TextView tvDayMaxMin = dayView.findViewById(R.id.tvDayMaxMin);
+
+                if (tvDayLabel != null) {
+                    tvDayLabel.setText(f.dayLabel);
+                    tvDayLabel.setTextColor(isDayMode ? 0xFF666973 : 0xFFB1B0B0);
                 }
-                if (ssWeatherTemp != null) {
-                    ssWeatherTemp.setText(Math.round(data.tempC) + "°C");
+                if (ivDayIcon != null) {
+                    ivDayIcon.setImageResource(iconForWeatherCode(f.weatherCode));
                 }
-                if (ssWeatherDesc != null) {
-                    ssWeatherDesc.setText("Chanakyapuri · " + data.getWeatherDescription());
+                if (tvDayMaxMin != null) {
+                    tvDayMaxMin.setText(Math.round(f.maxC) + "° / " + Math.round(f.minC) + "°");
+                    tvDayMaxMin.setTextColor(isDayMode ? 0xFF191A1F : 0xFFF5F2EB);
                 }
-                if (ssForecastSummary != null) {
-                    ssForecastSummary.setText("Humidity " + data.humidity + "% · Wind " + Math.round(data.windKmh) + " km/h");
-                }
+                dailyForecastRow.addView(dayView, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+            }
+        }
+
+        // Sync with Screensaver HUD
+        if (ssWeatherIcon != null) {
+            ssWeatherIcon.setText(data.getWeatherIcon());
+        }
+        if (ssWeatherTemp != null) {
+            ssWeatherTemp.setText(Math.round(data.currentTempC) + "°C");
+        }
+        if (ssWeatherDesc != null) {
+            ssWeatherDesc.setText(conditionLabel(data.currentWeatherCode));
+        }
+        if (ssForecastSummary != null && data.daily != null && data.daily.length > 0) {
+            ssForecastSummary.setText("High " + Math.round(data.daily[0].maxC) + "° · Low " + Math.round(data.daily[0].minC) + "°");
+        }
+    }
+
+    private int iconForWeatherCode(int code) {
+        if (code == 0) return R.drawable.ic_sunny;
+        if (code <= 3) return R.drawable.ic_partly_cloudy;
+        if (code <= 48) return R.drawable.ic_cloudy;
+        if (code <= 67 || (code >= 80 && code <= 82)) return R.drawable.ic_rain;
+        if (code >= 95) return R.drawable.ic_storm;
+        return R.drawable.ic_cloudy;
+    }
+
+    private String conditionLabel(int code) {
+        if (code == 0) return "Clear";
+        if (code == 1) return "Mainly Clear";
+        if (code == 2) return "Partly Cloudy";
+        if (code == 3) return "Overcast";
+        if (code <= 48) return "Foggy";
+        if (code <= 67) return "Rain";
+        if (code <= 77) return "Snow";
+        if (code <= 82) return "Showers";
+        if (code >= 95) return "Thunderstorm";
+        return "Partly Cloudy";
+    }
+
+    private void refreshWeather() {
+        LocationHelper.detectLocation(this, new LocationHelper.LocationCallback() {
+            @Override
+            public void onLocation(double lat, double lon) {
+                if (isFinishing() || isDestroyed()) return;
+                new WeatherHelper(MainActivity.this).fetchWeather(lat, lon, new WeatherHelper.WeatherCallback() {
+                    @Override
+                    public void onResult(WeatherHelper.WeatherData data) {
+                        if (isFinishing() || isDestroyed()) return;
+                        renderWeather(data);
+                    }
+
+                    @Override
+                    public void onError() {
+                        // Handled gracefully via cache
+                    }
+                });
             }
 
             @Override
             public void onError() {
-                // UI already served from cache or maintains graceful state
+                if (isFinishing() || isDestroyed()) return;
+                new WeatherHelper(MainActivity.this).fetchWeather(LocationHelper.DEFAULT_LAT, LocationHelper.DEFAULT_LON, new WeatherHelper.WeatherCallback() {
+                    @Override
+                    public void onResult(WeatherHelper.WeatherData data) {
+                        if (isFinishing() || isDestroyed()) return;
+                        renderWeather(data);
+                    }
+
+                    @Override
+                    public void onError() {}
+                });
             }
         });
     }
@@ -1042,14 +1130,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (brandMark != null) brandMark.setTextColor(day ? 0x40191A1F : 0x33F5F5F7);
         if (exploreHint != null) exploreHint.setVisibility(View.GONE);
 
-        View weatherCapsule = findViewById(R.id.weatherCapsule);
+        View weatherWidget = findViewById(R.id.weatherWidget);
         View topButtons = findViewById(R.id.topButtons);
-        if (weatherCapsule != null) {
+        if (weatherWidget != null) {
             android.graphics.drawable.GradientDrawable gd = new android.graphics.drawable.GradientDrawable();
             gd.setColor(glassCard);
-            gd.setCornerRadius(24 * density);
+            gd.setCornerRadius(20 * density);
             gd.setStroke((int) Math.max(1, 1 * density), glassBorder);
-            weatherCapsule.setBackground(gd);
+            weatherWidget.setBackground(gd);
         }
         if (topButtons != null) {
             android.graphics.drawable.GradientDrawable gd = new android.graphics.drawable.GradientDrawable();
@@ -1097,9 +1185,17 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             btn.setBackground(sld);
         }
 
-        if (tvTemp != null) tvTemp.setTextColor(primaryText);
-        if (tvFeelsLike != null) tvFeelsLike.setTextColor(secondaryText);
-        if (tvHumidityWind != null) tvHumidityWind.setTextColor(secondaryText);
+        if (tvTodayTemp != null) tvTodayTemp.setTextColor(primaryText);
+        if (tvTodayCondition != null) tvTodayCondition.setTextColor(secondaryText);
+        if (dailyForecastRow != null) {
+            for (int i = 0; i < dailyForecastRow.getChildCount(); i++) {
+                View child = dailyForecastRow.getChildAt(i);
+                TextView dLabel = child.findViewById(R.id.tvDayLabel);
+                TextView dMaxMin = child.findViewById(R.id.tvDayMaxMin);
+                if (dLabel != null) dLabel.setTextColor(secondaryText);
+                if (dMaxMin != null) dMaxMin.setTextColor(primaryText);
+            }
+        }
 
         // Screensaver HUD day/night styling
         if (screensaverHud != null) {

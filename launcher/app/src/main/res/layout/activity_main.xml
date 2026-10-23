@@ -125,9 +125,8 @@
                                 android:format24Hour="HH:mm"
                                 android:includeFontPadding="false"
                                 android:textColor="#F5F2EB"
-                                android:textSize="70sp"
-                                android:fontFamily="@font/outfit"
-                                android:fontVariationSettings="'wght' 400"
+                                android:textSize="84sp"
+                                android:fontFamily="@font/manrope_medium"
                                 android:letterSpacing="-0.03" />
 
                             <TextClock
@@ -135,14 +134,13 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginStart="8dp"
-                                android:layout_marginBottom="11dp"
+                                android:layout_marginBottom="14dp"
                                 android:format12Hour="a"
                                 android:format24Hour=""
                                 android:includeFontPadding="false"
                                 android:textColor="#C9AE7D"
-                                android:textSize="15sp"
-                                android:fontFamily="@font/outfit"
-                                android:fontVariationSettings="'wght' 600"
+                                android:textSize="18sp"
+                                android:fontFamily="@font/manrope_medium"
                                 android:letterSpacing="0.08"
                                 android:textAllCaps="true" />
                         </LinearLayout>
@@ -214,60 +212,87 @@
                             android:text="@string/settings"
                             android:drawableStart="@drawable/ic_settings"
                             android:nextFocusLeft="@+id/btnWifi"
-                            android:nextFocusRight="@+id/weatherCapsule"
-                            android:nextFocusUp="@+id/weatherCapsule"
+                            android:nextFocusRight="@+id/weatherWidget"
+                            android:nextFocusUp="@+id/weatherWidget"
                             android:nextFocusDown="@+id/grid" />
                     </LinearLayout>
                 </LinearLayout>
 
-                <!-- Right Column: Compact Single-Tier Weather Capsule -->
+                <!-- Right Column: Apple-Widget-Style Weather Card -->
                 <LinearLayout
-                    android:id="@+id/weatherCapsule"
-                    android:layout_width="wrap_content"
+                    android:id="@+id/weatherWidget"
+                    android:layout_width="420dp"
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
                     android:layout_alignParentTop="true"
                     android:layout_marginStart="24dp"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
+                    android:orientation="vertical"
                     android:background="@drawable/glass_capsule_bg"
-                    android:paddingHorizontal="24dp"
-                    android:paddingVertical="12dp"
+                    android:padding="20dp"
                     android:focusable="true"
                     android:clickable="true"
                     android:nextFocusLeft="@+id/btnSettings"
                     android:nextFocusDown="@+id/grid">
 
-                    <TextView
-                        android:id="@+id/tvTemp"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="@font/outfit_light"
-                        android:textSize="32sp"
-                        android:textColor="@color/text_primary" />
-
+                    <!-- Today's summary row -->
                     <LinearLayout
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:layout_marginStart="16dp">
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
 
+                        <ImageView
+                            android:id="@+id/ivTodayIcon"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:importantForAccessibility="no" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:layout_marginStart="12dp">
+
+                            <TextView
+                                android:id="@+id/tvTodayTemp"
+                                android:fontFamily="@font/outfit_light"
+                                android:textSize="34sp"
+                                android:textColor="@color/text_primary"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content" />
+
+                            <TextView
+                                android:id="@+id/tvTodayCondition"
+                                android:textSize="14sp"
+                                android:textColor="@color/text_secondary"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content" />
+                        </LinearLayout>
+
+                        <!-- Rain chance, shown only if meaningfully likely -->
                         <TextView
-                            android:id="@+id/tvFeelsLike"
+                            android:id="@+id/tvRainChance"
+                            android:textSize="14sp"
+                            android:textColor="@color/accent_blue"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:textSize="13sp"
-                            android:fontFamily="@font/outfit"
-                            android:textColor="@color/text_secondary" />
-
-                        <TextView
-                            android:id="@+id/tvHumidityWind"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:textSize="13sp"
-                            android:fontFamily="@font/outfit"
-                            android:textColor="@color/text_secondary" />
+                            android:visibility="gone" />
                     </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="@color/divider_subtle"
+                        android:layout_marginVertical="12dp" />
+
+                    <!-- 4-day forecast strip -->
+                    <LinearLayout
+                        android:id="@+id/dailyForecastRow"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:weightSum="4" />
                 </LinearLayout>
             </RelativeLayout>
 
