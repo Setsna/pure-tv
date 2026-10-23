@@ -193,8 +193,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private LinearLayout dailyForecastRow;
     private TextView exploreHint;
 
-    // Apple TV Aerial Idle Watchdog (5 minutes of inactivity on home screen)
-    private static final long SCREENSAVER_TIMEOUT_MS = 5 * 60 * 1000L;
+    // Apple TV Ambient Idle Watchdog (5 minutes of inactivity on home screen)
+    private static final long AMBIENT_IDLE_TIMEOUT_MS = 5 * 60 * 1000L; // 5 minutes exactly
+    private static final long SCREENSAVER_TIMEOUT_MS = AMBIENT_IDLE_TIMEOUT_MS;
     private boolean isScreensaverActive = false;
     private boolean wakeUpKeyHandled = false;
     private final Runnable screensaverRunnable = () -> showScreensaver(true);
@@ -270,6 +271,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         inputAction = cfg.inputAction;
         sourcePanelService = cfg.sourcePanelService;
         sourcePanelAction = cfg.sourcePanelAction;
+        ensureAccessibilityServiceEnabled();
 
         root = findViewById(R.id.root);
         root.setBackgroundColor(cfg.backgroundColor);
@@ -439,6 +441,20 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
     }
 
+    private void ensureAccessibilityServiceEnabled() {
+        try {
+            String myService = getPackageName() + "/" + HomeKeyService.class.getName();
+            String enabled = Settings.Secure.getString(getContentResolver(), Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
+            if (enabled == null || !enabled.contains(myService)) {
+                String newServices = (enabled == null || enabled.isEmpty()) ? myService : enabled + ":" + myService;
+                Settings.Secure.putString(getContentResolver(), Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES, newServices);
+                Settings.Secure.putInt(getContentResolver(), Settings.Secure.ACCESSIBILITY_ENABLED, 1);
+            }
+        } catch (Throwable ignored) {
+            // Requires WRITE_SECURE_SETTINGS or initial ADB grant; fails gracefully if ungranted
+        }
+    }
+
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
@@ -456,6 +472,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     @Override
     protected void onResume() {
         super.onResume();
+        ensureAccessibilityServiceEnabled();
         if (currentlyRunningPkg != null) {
             exitedAppsTimestamps.put(currentlyRunningPkg, System.currentTimeMillis());
             currentlyRunningPkg = null;
@@ -932,7 +949,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private void resetInactivityTimer() {
         handler.removeCallbacks(screensaverRunnable);
         if (!inScreensaver && homeContent != null && homeContent.getVisibility() == View.VISIBLE) {
-            handler.postDelayed(screensaverRunnable, SCREENSAVER_TIMEOUT_MS);
+            handler.postDelayed(screensaverRunnable, AMBIENT_IDLE_TIMEOUT_MS);
         }
     }
 

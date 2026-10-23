@@ -17,27 +17,69 @@ import android.view.accessibility.AccessibilityEvent;
 public class HomeKeyService extends AccessibilityService {
 
     @Override
+    protected void onServiceConnected() {
+        super.onServiceConnected();
+        android.accessibilityservice.AccessibilityServiceInfo info = getServiceInfo();
+        if (info == null) {
+            info = new android.accessibilityservice.AccessibilityServiceInfo();
+        }
+        info.flags |= android.accessibilityservice.AccessibilityServiceInfo.FLAG_REQUEST_FILTER_KEY_EVENTS;
+        setServiceInfo(info);
+        android.util.Log.d("HomeKeyService", "HomeKeyService connected with FLAG_REQUEST_FILTER_KEY_EVENTS");
+    }
+
+    @Override
     protected boolean onKeyEvent(KeyEvent event) {
         int code = event.getKeyCode();
         int scan = event.getScanCode();
 
-        boolean isYouTubeKey = (code == KeyEvent.KEYCODE_BUTTON_4 || code == 258 || code == 229 || scan == 403 || scan == 404);
+        android.util.Log.d("HomeKeyService", "Intercepted key: code=" + code + ", scan=" + scan + ", action=" + event.getAction());
+
+        boolean isSettingsKey = (code == KeyEvent.KEYCODE_SETTINGS || scan == 384);
+        if (isSettingsKey) {
+            if (event.getAction() == KeyEvent.ACTION_UP && !event.isCanceled()) {
+                try {
+                    startActivity(new Intent(android.provider.Settings.ACTION_SETTINGS)
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                } catch (Exception ignored) {
+                }
+            }
+            return true;
+        }
+
+        boolean isLiveTvKey = (code == KeyEvent.KEYCODE_TV || code == KeyEvent.KEYCODE_GUIDE || code == KeyEvent.KEYCODE_PROG_RED);
+        if (isLiveTvKey) {
+            if (event.getAction() == KeyEvent.ACTION_UP && !event.isCanceled()) {
+                launchApp("com.mitv.livetv", "com.google.android.tv");
+            }
+            return true;
+        }
+
+        boolean isHotstarKey = (code == KeyEvent.KEYCODE_BUTTON_5 || code == KeyEvent.KEYCODE_BUTTON_6 || code == 192 || code == 193 || code == 259 || code == 260 || code == 261 || scan == 406 || scan == 407 || scan == 416);
+        if (isHotstarKey) {
+            if (event.getAction() == KeyEvent.ACTION_UP && !event.isCanceled()) {
+                launchApp("in.startv.hotstar");
+            }
+            return true;
+        }
+
+        boolean isYouTubeKey = (code == KeyEvent.KEYCODE_BUTTON_4 || code == 191 || code == 258 || code == 229 || scan == 403 || scan == 404 || scan == 418);
         if (isYouTubeKey) {
             if (event.getAction() == KeyEvent.ACTION_UP && !event.isCanceled()) {
-                launchApp("com.google.android.youtube.tv");
+                launchApp("com.google.android.youtube.tv", "com.google.android.youtube");
             }
             return true;
         }
 
-        boolean isNetflixKey = (code == KeyEvent.KEYCODE_BUTTON_2 || scan == 402);
+        boolean isNetflixKey = (code == KeyEvent.KEYCODE_BUTTON_2 || code == 189 || scan == 402 || scan == 417);
         if (isNetflixKey) {
             if (event.getAction() == KeyEvent.ACTION_UP && !event.isCanceled()) {
-                launchApp("com.netflix.ninja");
+                launchApp("com.netflix.ninja", "com.netflix.mediaclient");
             }
             return true;
         }
 
-        boolean isPrimeKey = (code == KeyEvent.KEYCODE_BUTTON_3 || scan == 405);
+        boolean isPrimeKey = (code == KeyEvent.KEYCODE_BUTTON_3 || code == 190 || scan == 405 || scan == 425);
         if (isPrimeKey) {
             if (event.getAction() == KeyEvent.ACTION_UP && !event.isCanceled()) {
                 launchApp("com.amazon.amazonvideo.livingroom");
@@ -45,7 +87,7 @@ public class HomeKeyService extends AccessibilityService {
             return true;
         }
 
-        boolean isHomeKey = (code == KeyEvent.KEYCODE_ALL_APPS);
+        boolean isHomeKey = (code == KeyEvent.KEYCODE_ALL_APPS || code == KeyEvent.KEYCODE_HOME || scan == 172);
         boolean isPatchWallKey = (code == KeyEvent.KEYCODE_F1 || code == KeyEvent.KEYCODE_BUTTON_1 || scan == 401);
 
         if (!isHomeKey && !isPatchWallKey) return false;
@@ -70,16 +112,22 @@ public class HomeKeyService extends AccessibilityService {
         return true;
     }
 
-    private void launchApp(String pkg) {
-        Intent i = getPackageManager().getLeanbackLaunchIntentForPackage(pkg);
-        if (i == null) {
-            i = getPackageManager().getLaunchIntentForPackage(pkg);
-        }
-        if (i != null) {
-            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
-            try {
-                startActivity(i);
-            } catch (Exception ignored) {
+    private void launchApp(String... packages) {
+        for (String pkg : packages) {
+            Intent i = getPackageManager().getLeanbackLaunchIntentForPackage(pkg);
+            if (i == null) {
+                i = getPackageManager().getLaunchIntentForPackage(pkg);
+            }
+            if (i != null) {
+                // Single-focus RAM management: kill all other streaming apps before launching target
+                ProcessManager.freeMemoryForFocusedApp(this, pkg);
+
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+                try {
+                    startActivity(i);
+                    return;
+                } catch (Exception ignored) {
+                }
             }
         }
     }
