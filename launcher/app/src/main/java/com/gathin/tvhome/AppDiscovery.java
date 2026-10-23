@@ -17,20 +17,17 @@ import java.util.Set;
 
 public class AppDiscovery {
 
-    // Curated apps get custom charcoal tiles; everything else gets auto-generated banner
+    // Replace the HashSet with an ordered LinkedHashSet — order here IS dock priority
     public static final Set<String> CURATED_PACKAGES = new LinkedHashSet<>(Arrays.asList(
-        "in.startv.hotstar",                 // JioHotstar
-        "com.google.android.youtube.tv",     // YouTube TV
-        "com.netflix.ninja",                 // Netflix Android TV
-        "com.netflix.mediaclient",           // Netflix mobile / sideloaded
-        "com.spotify.tv.android",            // Spotify
-        "com.amazon.amazonvideo.livingroom", // Amazon Prime Video
-        "com.mitv.tvhome.mitvplus",          // Xiaomi TV+ Live Channels
-        "com.xiaomi.mitv.smartshare",        // Xiaomi SmartShare / Miracast
-        "com.xiaomi.mitv.mediaexplorer",     // Xiaomi MediaExplorer
-        "com.jio.jiotvsdk.tv",
-        "org.videolan.vlc",
-        "com.plexapp.android"
+        "com.mitv.livetv",                   // 1. Xiaomi Live TV
+        "in.startv.hotstar",                 // 2. JioHotstar
+        "com.google.android.youtube.tv",     // 3. YouTube
+        "com.spotify.tv.android",            // 4. Spotify
+        "com.netflix.ninja",                 // 5a. Netflix (Android TV)
+        "com.netflix.mediaclient",           // 5b. Netflix (Mobile/Sideloaded)
+        "com.amazon.amazonvideo.livingroom", // 6. Prime Video
+        "com.jio.jiotvsdk.tv",               // 7. JioTV
+        "org.videolan.vlc"                   // 8. VLC
     ));
 
     public static List<ResolveInfo> getLeanbackApps(Context ctx) {

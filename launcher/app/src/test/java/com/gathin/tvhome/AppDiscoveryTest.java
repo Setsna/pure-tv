@@ -31,4 +31,22 @@ public class AppDiscoveryTest {
         assertTrue("Prime Video should be curated", curated.contains("com.amazon.amazonvideo.livingroom"));
         assertTrue("Netflix TV should be curated", curated.contains("com.netflix.ninja"));
     }
+
+    @Test
+    public void curatedPackages_preservesExactPriorityOrder() {
+        String[] expectedOrder = {
+            "com.mitv.livetv",
+            "in.startv.hotstar",
+            "com.google.android.youtube.tv",
+            "com.spotify.tv.android"
+        };
+        int idx = 0;
+        for (String pkg : AppDiscovery.CURATED_PACKAGES) {
+            if (idx < expectedOrder.length) {
+                assertEquals("Slot " + idx + " must match priority order", expectedOrder[idx], pkg);
+                idx++;
+            }
+        }
+        assertEquals("First 4 priority slots must be verified", 4, idx);
+    }
 }

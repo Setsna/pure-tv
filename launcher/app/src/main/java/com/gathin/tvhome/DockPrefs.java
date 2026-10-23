@@ -8,17 +8,21 @@ import java.util.List;
 public class DockPrefs {
     private static final String PREFS_NAME = "dock_prefs";
     private static final String KEY_PREFIX = "dock_slot_";
+    private static final String KEY_DOCK_VERSION = "dock_version";
+    private static final int CURRENT_DOCK_VERSION = 2; // Phase 2.5 ordered priority
     public static final int SLOT_COUNT = 8;
 
     public static List<String> loadDock(Context ctx) {
         SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         List<String> dock = new ArrayList<>();
 
-        boolean firstRun = !prefs.contains(KEY_PREFIX + "0");
+        boolean firstRun = !prefs.contains(KEY_PREFIX + "0")
+                || prefs.getInt(KEY_DOCK_VERSION, 0) < CURRENT_DOCK_VERSION;
         if (firstRun) {
-            // First launch: populate with smart defaults and persist immediately
+            // First launch or priority update: populate with smart defaults and persist immediately
             dock = AppDiscovery.getDefaultDockSelection(ctx, SLOT_COUNT);
             saveDock(ctx, dock);
+            prefs.edit().putInt(KEY_DOCK_VERSION, CURRENT_DOCK_VERSION).apply();
             return dock;
         }
 
