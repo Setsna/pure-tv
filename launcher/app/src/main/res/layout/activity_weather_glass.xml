@@ -1,0 +1,718 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/weatherRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#060608">
+
+    <!-- Active Wallpaper Background Layer -->
+    <ImageView
+        android:id="@+id/weatherBgWallpaper"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:importantForAccessibility="no" />
+
+    <!-- Dark Scrim / Vignette for Text Contrast -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/apple_tv_vignette"
+        android:importantForAccessibility="no" />
+
+    <!-- Center Floating Liquid Glass Main Panel -->
+    <LinearLayout
+        android:id="@+id/glassMainCard"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginStart="64dp"
+        android:layout_marginEnd="64dp"
+        android:layout_marginTop="36dp"
+        android:layout_marginBottom="36dp"
+        android:background="@drawable/bg_weather_glass_panel"
+        android:orientation="vertical"
+        android:paddingStart="40dp"
+        android:paddingEnd="40dp"
+        android:paddingTop="28dp"
+        android:paddingBottom="24dp">
+
+        <!-- ZONE 1: HEADER (Location + Time Left · 4-Line Stat Stack Right) -->
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/weatherLocTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Chanakyapuri, New Delhi"
+                    android:textColor="#F5F2EB"
+                    android:textSize="24sp"
+                    android:fontFamily="@font/outfit"
+                    android:fontVariationSettings="'wght' 600"
+                    android:letterSpacing="0.04" />
+
+                <TextView
+                    android:id="@+id/weatherDateSub"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:text="Tuesday, 3:00 PM"
+                    android:textColor="#80F5F2EB"
+                    android:textSize="17sp"
+                    android:fontFamily="@font/outfit"
+                    android:fontVariationSettings="'wght' 400" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:gravity="end"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/statAqi"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="AQI: 120 (Poor)"
+                    android:textColor="#99F5F2EB"
+                    android:textSize="13sp"
+                    android:fontFamily="@font/outfit"
+                    android:fontVariationSettings="'wght' 400" />
+
+                <TextView
+                    android:id="@+id/statHumidity"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="Humidity: 48%"
+                    android:textColor="#99F5F2EB"
+                    android:textSize="13sp"
+                    android:fontFamily="@font/outfit"
+                    android:fontVariationSettings="'wght' 400" />
+
+                <TextView
+                    android:id="@+id/statPrecip"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="Precipitation: 0%"
+                    android:textColor="#99F5F2EB"
+                    android:textSize="13sp"
+                    android:fontFamily="@font/outfit"
+                    android:fontVariationSettings="'wght' 400" />
+
+                <TextView
+                    android:id="@+id/statWind"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="Wind: 9 km/h NW"
+                    android:textColor="#99F5F2EB"
+                    android:textSize="13sp"
+                    android:fontFamily="@font/outfit"
+                    android:fontVariationSettings="'wght' 400" />
+            </LinearLayout>
+        </RelativeLayout>
+
+        <!-- ZONE 2: PRIMARY READOUT (Giant Temp Number + Icon) -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/primaryWeatherIcon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="☀️"
+                android:textSize="44sp" />
+
+            <TextView
+                android:id="@+id/primaryTempNumber"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="14dp"
+                android:includeFontPadding="false"
+                android:text="28"
+                android:textColor="#F5F2EB"
+                android:textSize="92sp"
+                android:fontFamily="@font/outfit"
+                android:fontVariationSettings="'wght' 200"
+                android:letterSpacing="-0.04" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_marginBottom="24dp"
+                android:gravity="bottom"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/unitCelsius"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="°C"
+                    android:textColor="#F5F2EB"
+                    android:textSize="22sp"
+                    android:fontFamily="@font/outfit"
+                    android:fontVariationSettings="'wght' 600" />
+
+                <TextView
+                    android:id="@+id/unitFahrenheit"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="°F"
+                    android:textColor="#59F5F2EB"
+                    android:textSize="20sp"
+                    android:fontFamily="@font/outfit"
+                    android:fontVariationSettings="'wght' 400" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/conditionSummaryText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="32dp"
+                android:text="· Sunny &amp; Pleasant"
+                android:textColor="#C5A059"
+                android:textSize="18sp"
+                android:fontFamily="@font/outfit"
+                android:fontVariationSettings="'wght' 500"
+                android:letterSpacing="0.08" />
+        </LinearLayout>
+
+        <!-- ZONE 3: TAB ROW (Temperature · Precipitation · Wind · AQI) -->
+        <LinearLayout
+            android:id="@+id/tabRow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="horizontal">
+
+            <!-- Tab 0: Temperature -->
+            <LinearLayout
+                android:id="@+id/tabTemp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/weather_tab_bg"
+                android:focusable="true"
+                android:clickable="true"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:paddingTop="6dp"
+                android:paddingBottom="6dp"
+                android:nextFocusRight="@+id/tabPrecip"
+                android:nextFocusDown="@+id/forecastDay0"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tabTempLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Temperature"
+                    android:textColor="#80F5F2EB"
+                    android:textSize="16sp"
+                    android:fontFamily="@font/outfit"
+                    android:fontVariationSettings="'wght' 400" />
+
+                <View
+                    android:id="@+id/tabTempIndicator"
+                    android:layout_width="match_parent"
+                    android:layout_height="3dp"
+                    android:layout_marginTop="4dp"
+                    android:background="@drawable/weather_tab_active_indicator"
+                    android:visibility="invisible" />
+            </LinearLayout>
+
+            <!-- Tab 1: Precipitation -->
+            <LinearLayout
+                android:id="@+id/tabPrecip"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:background="@drawable/weather_tab_bg"
+                android:focusable="true"
+                android:clickable="true"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:paddingTop="6dp"
+                android:paddingBottom="6dp"
+                android:nextFocusLeft="@+id/tabTemp"
+                android:nextFocusRight="@+id/tabWind"
+                android:nextFocusDown="@+id/forecastDay1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tabPrecipLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Precipitation"
+                    android:textColor="#80F5F2EB"
+                    android:textSize="16sp"
+                    android:fontFamily="@font/outfit"
+                    android:fontVariationSettings="'wght' 400" />
+
+                <View
+                    android:id="@+id/tabPrecipIndicator"
+                    android:layout_width="match_parent"
+                    android:layout_height="3dp"
+                    android:layout_marginTop="4dp"
+                    android:background="@drawable/weather_tab_active_indicator"
+                    android:visibility="invisible" />
+            </LinearLayout>
+
+            <!-- Tab 2: Wind -->
+            <LinearLayout
+                android:id="@+id/tabWind"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:background="@drawable/weather_tab_bg"
+                android:focusable="true"
+                android:clickable="true"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:paddingTop="6dp"
+                android:paddingBottom="6dp"
+                android:nextFocusLeft="@+id/tabPrecip"
+                android:nextFocusRight="@+id/tabAqi"
+                android:nextFocusDown="@+id/forecastDay2"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tabWindLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Wind"
+                    android:textColor="#80F5F2EB"
+                    android:textSize="16sp"
+                    android:fontFamily="@font/outfit"
+                    android:fontVariationSettings="'wght' 400" />
+
+                <View
+                    android:id="@+id/tabWindIndicator"
+                    android:layout_width="match_parent"
+                    android:layout_height="3dp"
+                    android:layout_marginTop="4dp"
+                    android:background="@drawable/weather_tab_active_indicator"
+                    android:visibility="invisible" />
+            </LinearLayout>
+
+            <!-- Tab 3: AQI (Default Active in Reference) -->
+            <LinearLayout
+                android:id="@+id/tabAqi"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:background="@drawable/weather_tab_bg"
+                android:focusable="true"
+                android:clickable="true"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:paddingTop="6dp"
+                android:paddingBottom="6dp"
+                android:nextFocusLeft="@+id/tabWind"
+                android:nextFocusDown="@+id/forecastDay3"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tabAqiLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="AQI"
+                    android:textColor="#F5F2EB"
+                    android:textSize="16sp"
+                    android:fontFamily="@font/outfit"
+                    android:fontVariationSettings="'wght' 600" />
+
+                <View
+                    android:id="@+id/tabAqiIndicator"
+                    android:layout_width="match_parent"
+                    android:layout_height="3dp"
+                    android:layout_marginTop="4dp"
+                    android:background="@drawable/weather_tab_active_indicator"
+                    android:visibility="visible" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Full-Width Hairline Divider Below Tabs -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#26FFFFFF" />
+
+        <!-- ZONE 4: DETAIL CONTENT AREA (Dynamic per Tab) -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginTop="10dp">
+
+            <!-- Detail Pane: AQI -->
+            <LinearLayout
+                android:id="@+id/paneAqi"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical">
+
+                <!-- Big Number Left + Advisory Text Right -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <!-- Big Number + Category -->
+                    <LinearLayout
+                        android:layout_width="160dp"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/aqiBigNumber"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:includeFontPadding="false"
+                            android:text="120"
+                            android:textColor="#F5F2EB"
+                            android:textSize="60sp"
+                            android:fontFamily="@font/outfit"
+                            android:fontVariationSettings="'wght' 300" />
+
+                        <TextView
+                            android:id="@+id/aqiCategoryWord"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Poor"
+                            android:textColor="#FF9500"
+                            android:textSize="18sp"
+                            android:fontFamily="@font/outfit"
+                            android:fontVariationSettings="'wght' 500" />
+                    </LinearLayout>
+
+                    <!-- Advisory Paragraph -->
+                    <TextView
+                        android:id="@+id/aqiAdvisoryText"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="24dp"
+                        android:lineSpacingExtra="4dp"
+                        android:text="The air has reached a high level of pollution and is unhealthy for sensitive groups. Reduce time spent outside if you are feeling symptoms such as difficulty breathing or throat irritation."
+                        android:textColor="#B3F5F2EB"
+                        android:textSize="15sp"
+                        android:fontFamily="@font/outfit"
+                        android:fontVariationSettings="'wght' 300" />
+                </LinearLayout>
+
+                <!-- EPA 5-Stop Gradient Bar + Position Dot -->
+                <FrameLayout
+                    android:id="@+id/aqiBarContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="28dp"
+                    android:layout_marginTop="10dp">
+
+                    <!-- Continuous 5-Stop Bar -->
+                    <View
+                        android:id="@+id/aqiGradientBar"
+                        android:layout_width="match_parent"
+                        android:layout_height="8dp"
+                        android:layout_gravity="center_vertical" />
+
+                    <!-- Floating Position Indicator Dot -->
+                    <View
+                        android:id="@+id/aqiIndicatorDot"
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:layout_gravity="center_vertical|start"
+                        android:background="@drawable/aqi_indicator_dot" />
+                </FrameLayout>
+
+                <!-- Scale Numeric Ticks -->
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentStart="true"
+                        android:text="0"
+                        android:textColor="#66F5F2EB"
+                        android:textSize="12sp"
+                        android:fontFamily="@font/outfit" />
+
+                    <TextView
+                        android:id="@+id/tick100"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentStart="true"
+                        android:layout_marginStart="210dp"
+                        android:text="100"
+                        android:textColor="#66F5F2EB"
+                        android:textSize="12sp"
+                        android:fontFamily="@font/outfit" />
+
+                    <TextView
+                        android:id="@+id/tick200"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentStart="true"
+                        android:layout_marginStart="420dp"
+                        android:text="200"
+                        android:textColor="#66F5F2EB"
+                        android:textSize="12sp"
+                        android:fontFamily="@font/outfit" />
+
+                    <TextView
+                        android:id="@+id/tick300"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentStart="true"
+                        android:layout_marginStart="630dp"
+                        android:text="300"
+                        android:textColor="#66F5F2EB"
+                        android:textSize="12sp"
+                        android:fontFamily="@font/outfit" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentEnd="true"
+                        android:text="400+"
+                        android:textColor="#66F5F2EB"
+                        android:textSize="12sp"
+                        android:fontFamily="@font/outfit" />
+                </RelativeLayout>
+            </LinearLayout>
+
+            <!-- Detail Pane: Generic (Temp / Precip / Wind) -->
+            <LinearLayout
+                android:id="@+id/paneGeneric"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/genericPaneTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Hourly Forecast &amp; Trend"
+                    android:textColor="#C5A059"
+                    android:textSize="16sp"
+                    android:fontFamily="@font/outfit"
+                    android:fontVariationSettings="'wght' 600"
+                    android:letterSpacing="0.08" />
+
+                <TextView
+                    android:id="@+id/genericPaneDesc"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:lineSpacingExtra="4dp"
+                    android:text="Temperature will peak at 30°C at 2:00 PM before cooling down to 22°C tonight. Zero precipitation expected across the Delhi NCR region."
+                    android:textColor="#B3F5F2EB"
+                    android:textSize="16sp"
+                    android:fontFamily="@font/outfit"
+                    android:fontVariationSettings="'wght' 300" />
+            </LinearLayout>
+        </FrameLayout>
+
+        <!-- ZONE 5: 7-DAY FORECAST ROW -->
+        <LinearLayout
+            android:id="@+id/forecastRow"
+            android:layout_width="match_parent"
+            android:layout_height="102dp"
+            android:layout_marginTop="8dp"
+            android:orientation="horizontal">
+
+            <!-- Day 0 (Today) -->
+            <LinearLayout
+                android:id="@+id/forecastDay0"
+                style="@null"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="@drawable/weather_forecast_card_bg"
+                android:focusable="true"
+                android:clickable="true"
+                android:nextFocusUp="@+id/tabTemp"
+                android:nextFocusRight="@+id/forecastDay1"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <TextView android:id="@+id/f0Date" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Today" android:textColor="#F5F2EB" android:textSize="12.5sp" android:fontFamily="@font/outfit" android:fontVariationSettings="'wght' 500" />
+                <TextView android:id="@+id/f0Icon" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:text="☀️" android:textSize="18sp" />
+                <TextView android:id="@+id/f0Temp" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:text="28°  20°" android:textColor="#B3F5F2EB" android:textSize="13sp" android:fontFamily="@font/outfit" />
+            </LinearLayout>
+
+            <!-- Day 1 -->
+            <LinearLayout
+                android:id="@+id/forecastDay1"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:background="@drawable/weather_forecast_card_bg"
+                android:focusable="true"
+                android:clickable="true"
+                android:nextFocusUp="@+id/tabPrecip"
+                android:nextFocusLeft="@+id/forecastDay0"
+                android:nextFocusRight="@+id/forecastDay2"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <TextView android:id="@+id/f1Date" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Fri 23" android:textColor="#F5F2EB" android:textSize="12.5sp" android:fontFamily="@font/outfit" android:fontVariationSettings="'wght' 500" />
+                <TextView android:id="@+id/f1Icon" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:text="☀️" android:textSize="18sp" />
+                <TextView android:id="@+id/f1Temp" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:text="29°  21°" android:textColor="#B3F5F2EB" android:textSize="13sp" android:fontFamily="@font/outfit" />
+            </LinearLayout>
+
+            <!-- Day 2 -->
+            <LinearLayout
+                android:id="@+id/forecastDay2"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:background="@drawable/weather_forecast_card_bg"
+                android:focusable="true"
+                android:clickable="true"
+                android:nextFocusUp="@+id/tabWind"
+                android:nextFocusLeft="@+id/forecastDay1"
+                android:nextFocusRight="@+id/forecastDay3"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <TextView android:id="@+id/f2Date" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Sat 24" android:textColor="#F5F2EB" android:textSize="12.5sp" android:fontFamily="@font/outfit" android:fontVariationSettings="'wght' 500" />
+                <TextView android:id="@+id/f2Icon" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:text="🌤️" android:textSize="18sp" />
+                <TextView android:id="@+id/f2Temp" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:text="29°  21°" android:textColor="#B3F5F2EB" android:textSize="13sp" android:fontFamily="@font/outfit" />
+            </LinearLayout>
+
+            <!-- Day 3 -->
+            <LinearLayout
+                android:id="@+id/forecastDay3"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:background="@drawable/weather_forecast_card_bg"
+                android:focusable="true"
+                android:clickable="true"
+                android:nextFocusUp="@+id/tabAqi"
+                android:nextFocusLeft="@+id/forecastDay2"
+                android:nextFocusRight="@+id/forecastDay4"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <TextView android:id="@+id/f3Date" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Sun 25" android:textColor="#F5F2EB" android:textSize="12.5sp" android:fontFamily="@font/outfit" android:fontVariationSettings="'wght' 500" />
+                <TextView android:id="@+id/f3Icon" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:text="☀️" android:textSize="18sp" />
+                <TextView android:id="@+id/f3Temp" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:text="30°  22°" android:textColor="#B3F5F2EB" android:textSize="13sp" android:fontFamily="@font/outfit" />
+            </LinearLayout>
+
+            <!-- Day 4 -->
+            <LinearLayout
+                android:id="@+id/forecastDay4"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:background="@drawable/weather_forecast_card_bg"
+                android:focusable="true"
+                android:clickable="true"
+                android:nextFocusUp="@+id/tabAqi"
+                android:nextFocusLeft="@+id/forecastDay3"
+                android:nextFocusRight="@+id/forecastDay5"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <TextView android:id="@+id/f4Date" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Mon 26" android:textColor="#F5F2EB" android:textSize="12.5sp" android:fontFamily="@font/outfit" android:fontVariationSettings="'wght' 500" />
+                <TextView android:id="@+id/f4Icon" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:text="☀️" android:textSize="18sp" />
+                <TextView android:id="@+id/f4Temp" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:text="30°  21°" android:textColor="#B3F5F2EB" android:textSize="13sp" android:fontFamily="@font/outfit" />
+            </LinearLayout>
+
+            <!-- Day 5 -->
+            <LinearLayout
+                android:id="@+id/forecastDay5"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:background="@drawable/weather_forecast_card_bg"
+                android:focusable="true"
+                android:clickable="true"
+                android:nextFocusUp="@+id/tabAqi"
+                android:nextFocusLeft="@+id/forecastDay4"
+                android:nextFocusRight="@+id/forecastDay6"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <TextView android:id="@+id/f5Date" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Tue 27" android:textColor="#F5F2EB" android:textSize="12.5sp" android:fontFamily="@font/outfit" android:fontVariationSettings="'wght' 500" />
+                <TextView android:id="@+id/f5Icon" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:text="⛅" android:textSize="18sp" />
+                <TextView android:id="@+id/f5Temp" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:text="28°  20°" android:textColor="#B3F5F2EB" android:textSize="13sp" android:fontFamily="@font/outfit" />
+            </LinearLayout>
+
+            <!-- Day 6 -->
+            <LinearLayout
+                android:id="@+id/forecastDay6"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:background="@drawable/weather_forecast_card_bg"
+                android:focusable="true"
+                android:clickable="true"
+                android:nextFocusUp="@+id/tabAqi"
+                android:nextFocusLeft="@+id/forecastDay5"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <TextView android:id="@+id/f6Date" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Wed 28" android:textColor="#F5F2EB" android:textSize="12.5sp" android:fontFamily="@font/outfit" android:fontVariationSettings="'wght' 500" />
+                <TextView android:id="@+id/f6Icon" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:text="☀️" android:textSize="18sp" />
+                <TextView android:id="@+id/f6Temp" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:text="27°  19°" android:textColor="#B3F5F2EB" android:textSize="13sp" android:fontFamily="@font/outfit" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- ZONE 6: FOOTER -->
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:text="Data from Open-Meteo &amp; wttr.in"
+                android:textColor="#59F5F2EB"
+                android:textSize="11.5sp"
+                android:fontFamily="@font/outfit" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:text="Press BACK to return to Home"
+                android:textColor="#40F5F2EB"
+                android:textSize="11.5sp"
+                android:fontFamily="@font/outfit"
+                android:letterSpacing="0.08" />
+        </RelativeLayout>
+    </LinearLayout>
+</FrameLayout>

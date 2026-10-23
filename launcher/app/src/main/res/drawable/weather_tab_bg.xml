@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Focused state: subtle translucent ivory pill highlight with clear border -->
+    <item android:state_focused="true">
+        <shape android:shape="rectangle">
+            <corners android:radius="14dp" />
+            <solid android:color="#33FFFFFF" />
+            <stroke android:width="1.5dp" android:color="#B3F5F2EB" />
+        </shape>
+    </item>
+    <!-- Default resting state: transparent -->
+    <item>
+        <shape android:shape="rectangle">
+            <corners android:radius="14dp" />
+            <solid android:color="@android:color/transparent" />
+        </shape>
+    </item>
+</selector>

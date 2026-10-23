@@ -18,7 +18,7 @@
     <string name="offline">Offline</string>
     <string name="not_available">Not available on this TV</string>
     <string name="cant_open">Can\'t open %1$s</string>
-    <string name="date_format">EEEE  d MMMM</string>
+    <string name="date_format">EEEE · d MMMM</string>
     <string name="dream_name">Clock</string>
     <string name="vpn">VPN</string>
     <string name="vpn_off">VPN off</string>
@@ -46,4 +46,8 @@
     <string name="card_state_new">New</string>
     <string name="card_state_new_key">New key</string>
     <string name="card_state_new_label">New name</string>
+    <string name="wifi_qr">Wi-Fi QR</string>
+    <string name="wifi_qr_title">Wi-Fi Quick Connect</string>
+    <string name="wifi_qr_subtitle">Scan with your phone to connect instantly</string>
+    <string name="wifi_done">Done</string>
 </resources>

@@ -8,21 +8,45 @@
 <resources>
 
     <!-- Apps pinned to the dock row at the bottom, in this order. Missing apps are skipped. -->
+    <!-- Primary 4 core apps in the main dock; secondary apps accessible on D-pad down -->
     <string-array name="dock_apps">
+        <item>com.mitv.tvhome.mitvplus</item>
+        <item>in.startv.hotstar</item>
+        <item>com.google.android.youtube.tv</item>
+        <item>com.spotify.tv.android</item>
         <item>com.netflix.ninja</item>
         <item>com.amazon.amazonvideo.livingroom</item>
-        <item>com.google.android.youtube.tv</item>
-        <item>in.startv.hotstar</item>
+        <item>com.xiaomi.mitv.smartshare</item>
+        <item>com.xiaomi.mitv.mediaexplorer</item>
     </string-array>
 
-    <!-- Apps never shown as tiles (e.g. the Live TV app, which the Inputs menu already covers). -->
-    <string-array name="hidden_apps">
-        <item>com.mediatek.wwtv.tvcenter</item>
+    <!-- Secondary apps: empty to preserve dock order -->
+    <string-array name="secondary_apps">
+    </string-array>
+
+    <!-- System packages hidden from tile grid (accessible via top bar or remote buttons) -->
+    <string-array name="hidden_apps" translatable="false">
+        <item>com.android.tv.settings</item>
+        <item>com.android.vending</item>
+        <item>com.google.android.katniss</item>
+        <item>com.google.android.backdrop</item>
+        <item>com.duokan.airkan.tvbox</item>
         <item>com.mitv.gallery</item>
+        <item>com.mitv.tvhome.atv</item>
+        <item>com.xiaomi.mitv.tvmanager</item>
+        <item>com.xiaomi.mitv.manualhelp</item>
+        <item>com.google.android.play.games</item>
+        <item>com.google.android.videos</item>
+        <item>com.google.android.youtube.tvmusic</item>
+        <item>com.graymatrix.did</item>
+        <item>com.internet.tvbrowser</item>
+        <item>com.mxtech.videoplayer.television</item>
+        <item>com.sonyliv</item>
+        <item>fusion.android.tv.demo</item>
     </string-array>
 
     <!-- The TV's Live TV / tuner app, offered at the end of the Inputs menu. Leave empty to omit. -->
-    <string name="live_tv_package" translatable="false">com.mediatek.wwtv.tvcenter</string>
+    <string name="live_tv_package" translatable="false">com.mitv.tvhome.mitvplus</string>
 
     <!-- Some TVs give their Live TV app no leanback entry point at all, so `live_tv_package` above
          resolves to nothing (TCL Android TV 9 on China-market sets is one). This action is then sent
@@ -50,15 +74,16 @@
     <!-- Grid rows left visible under the dock on the home screen. 0 = dock sits at the very bottom. -->
     <integer name="rows_below_dock">0</integer>
 
-    <!-- Tiles per row in the grid; the dock always has this many slots. Tiles are 180dp wide at 4 columns and
-         shrink to fit from 5 up (about 144dp at 5, 117dp at 6 on a 1080p TV). -->
+    <!-- Tiles per row in the grid; 4 slots for the 4 core apps (Hotstar, YouTube, Spotify, Netflix) -->
     <integer name="columns">4</integer>
 
     <!-- "Default home" tile that opens Android's home-screen picker, for TVs whose settings have one
          (most Android TVs don't; the tile only appears when the page exists). Off by default. -->
     <bool name="show_home_settings_shortcut">false</bool>
 
-    <!-- Module cards: an app that declares a card (docs/specs/card.md) can stand in for its tile with its own
-         label, caption and glow colour, once you answer Show on the prompt. false: never look for cards or ask. -->
-    <bool name="module_cards">true</bool>
+    <!-- Module cards: disabled for a completely clean, prompt-free minimal experience -->
+    <bool name="module_cards">false</bool>
+
+    <!-- Force Obsidian Quiet Luxury Theme 24/7: Set to FALSE to enable automatic Day Mode (06:00-18:00) vs Night Mode (18:00-06:00) -->
+    <bool name="force_obsidian_theme">false</bool>
 </resources>

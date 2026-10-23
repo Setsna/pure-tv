@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Night Palette — OLED Cinema / Midnight Glass -->
+    <color name="night_bg">#090A0C</color>
+    <color name="night_bg_charcoal">#101114</color>
+    <color name="night_glass_surface">#D61B1D23</color>     <!-- rgba(27, 29, 35, 0.84) neutral charcoal -->
+    <color name="night_glass_control">#D1191B20</color>     <!-- rgba(25, 27, 32, 0.82) -->
+    <color name="night_glass_dock">#D61A1C22</color>        <!-- rgba(26, 28, 34, 0.84) neutral dock shelf -->
+    <color name="night_glass_elevated">#E6242730</color>    <!-- rgba(36, 39, 48, 0.90) elevated charcoal -->
+    <color name="night_glass_border">#26F5F2EB</color>      <!-- rgba(245, 242, 235, 0.15) warm ivory edge -->
+    <color name="night_text_primary">#F5F2EB</color>
+    <color name="night_text_secondary">#B1B0B0</color>
+    <color name="night_text_tertiary">#777A84</color>
+    <color name="night_focus_accent">#87B9EA</color>        <!-- Refined tvOS light blue -->
+    <color name="night_warm_accent">#C9AE7D</color>
+    <color name="text_primary">#F5F2EB</color>
+    <color name="text_secondary">#B1B0B0</color>
+
+    <!-- Day Palette — Warm Minimal -->
+    <color name="day_bg">#F2F0EB</color>
+    <color name="day_glass_surface">#ADFFFFFF</color>       <!-- rgba(255, 255, 255, 0.68) -->
+    <color name="day_glass_control">#D1F6F5F1</color>       <!-- rgba(246, 245, 241, 0.82) -->
+    <color name="day_glass_dock">#C7F5F4EF</color>          <!-- rgba(245, 244, 239, 0.78) -->
+    <color name="day_glass_elevated">#B8FFFFFF</color>      <!-- rgba(255, 255, 255, 0.72) -->
+    <color name="day_glass_border">#1A191A1F</color>        <!-- rgba(25, 26, 31, 0.10) -->
+    <color name="day_text_primary">#191A1F</color>
+    <color name="day_text_secondary">#666973</color>
+    <color name="day_text_tertiary">#858792</color>
+    <color name="day_focus_accent">#3979C6</color>
+    <color name="day_warm_accent">#B79A63</color>
+
+    <!-- Backward compatibility aliases -->
+    <color name="obsidian_base">#090A0C</color>
+    <color name="obsidian_surface">#101114</color>
+    <color name="warm_ivory">#F5F5F7</color>
+    <color name="champagne_gold">#C9AE7D</color>
+    <color name="weather_glass_tint">#C71F2025</color>
+    <color name="weather_glass_tint_strong">#E02B2C33</color>
+    <color name="weather_glass_edge">#1FFFFFFF</color>
+
+    <!-- Standard EPA AQI Category Scale -->
+    <color name="aqi_green">#34C759</color>   <!-- 0-50 Good -->
+    <color name="aqi_yellow">#FFCC00</color>  <!-- 51-100 Moderate -->
+    <color name="aqi_orange">#FF9500</color>  <!-- 101-150 Unhealthy for Sensitive Groups -->
+    <color name="aqi_red">#FF3B30</color>     <!-- 151-200 Unhealthy -->
+    <color name="aqi_purple">#AF52DE</color>  <!-- 201-300+ Very Unhealthy / Hazardous -->
+</resources>

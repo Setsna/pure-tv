@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- OLED Cinema Midnight Glass Scrim: Restrained Charcoal Scrim preserving golden forest light -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <gradient
+        android:angle="0"
+        android:startColor="#7A07090D"
+        android:centerColor="#4D07090D"
+        android:endColor="#6107090D"
+        android:type="linear" />
+</shape>

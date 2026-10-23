@@ -19,6 +19,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
+import android.view.animation.DecelerateInterpolator;
 import android.view.animation.OvershootInterpolator;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -79,7 +80,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         }
     }
 
-    static final float FOCUS_SCALE = 1.10f;
+    static final float FOCUS_SCALE = 1.04f;
     /** Design size of a tile (dp); tiles shrink from here when the columns don't fit, see tileWidthPx. */
     static final float DESIGN_W_DP = 180f, DESIGN_H_DP = 101f;
 
@@ -118,8 +119,8 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         this.ctx = ctx;
         this.listener = listener;
         this.dockSize = dockSize;
-        this.favourites = cfg.dockApps;
         this.hidden = new HashSet<>(cfg.hiddenApps);
+        this.favourites = new ArrayList<>(DockPrefs.loadDock(ctx));
         this.showHomeSettings = cfg.showHomeSettingsShortcut;
         // Tiles keep their identity across reload(), so a focused tile stays on its app instead of
         // its view being rebound to whatever app now sits in that slot.
@@ -127,13 +128,35 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
     }
 
     /**
-     * Rebuilds the tiles. A shown module card stands in for every tile of its package (same component,
-     * so focus follows it); hidden_apps wins over a card, and a card's package in dock_apps takes that slot.
+     * Rebuilds the tiles using universal dynamic app discovery from DockPrefs and AppDiscovery.
      */
     void reload(List<Cards.Card> cards) {
+        this.favourites.clear();
+        this.favourites.addAll(DockPrefs.loadDock(ctx));
+
         PackageManager pm = ctx.getPackageManager();
         Intent probe = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER);
         List<ResolveInfo> found = pm.queryIntentActivities(probe, 0);
+
+        // Also query launch intents for configured dock apps (favourites) in case they declare standard launcher category
+        Set<String> resolvedPkgs = new HashSet<>();
+        for (ResolveInfo ri : found) {
+            if (ri.activityInfo != null) resolvedPkgs.add(ri.activityInfo.packageName);
+        }
+        for (String favPkg : favourites) {
+            if (!resolvedPkgs.contains(favPkg) && !hidden.contains(favPkg)) {
+                Intent li = pm.getLeanbackLaunchIntentForPackage(favPkg);
+                if (li == null) li = pm.getLaunchIntentForPackage(favPkg);
+                if (li != null) {
+                    ResolveInfo ri = pm.resolveActivity(li, 0);
+                    if (ri != null && ri.activityInfo != null) {
+                        found.add(ri);
+                        resolvedPkgs.add(favPkg);
+                    }
+                }
+            }
+        }
+
         Map<String, Cards.Card> cardByPkg = new HashMap<>();
         for (Cards.Card c : cards) cardByPkg.put(c.pkg, c);
         List<Entry> fresh = new ArrayList<>();
@@ -141,6 +164,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
             if (ri.activityInfo == null) continue;
             String pkg = ri.activityInfo.packageName;
             if (pkg.equals(ctx.getPackageName()) || hidden.contains(pkg)) continue;
+            if (!favourites.isEmpty() && !favourites.contains(pkg)) continue; // STRICT CORE APPS ONLY
             ComponentName component = new ComponentName(pkg, ri.activityInfo.name);
             Cards.Card card = cardByPkg.get(pkg);
             if (card != null && !card.component.equals(component)) continue;   // the card stands in for this tile
@@ -153,6 +177,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
                 fresh.add(new Entry(String.valueOf(ri.loadLabel(pm)), component, banner, icon));
             }
         }
+
         Collections.sort(fresh, (a, b) -> {
             int fa = favourites.indexOf(a.pkg), fb = favourites.indexOf(b.pkg);
             if (fa >= 0 || fb >= 0) {
@@ -177,6 +202,36 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         notifyDataSetChanged();
     }
 
+    private int getCuratedTileRes(String pkg) {
+        if ("in.startv.hotstar".equals(pkg)) {
+            return R.drawable.tile_hotstar;
+        } else if ("com.google.android.youtube.tv".equals(pkg)) {
+            return R.drawable.tile_youtube;
+        } else if ("com.spotify.tv.android".equals(pkg)) {
+            return R.drawable.tile_spotify;
+        } else if ("com.netflix.ninja".equals(pkg) || "com.netflix.mediaclient".equals(pkg)) {
+            return R.drawable.tile_netflix;
+        } else if ("com.amazon.amazonvideo.livingroom".equals(pkg)) {
+            return R.drawable.tile_prime;
+        } else if ("com.mitv.tvhome.mitvplus".equals(pkg)) {
+            return R.drawable.tile_mitvplus;
+        } else if ("com.xiaomi.mitv.smartshare".equals(pkg)) {
+            return R.drawable.tile_smartshare;
+        } else if ("com.xiaomi.mitv.mediaexplorer".equals(pkg)) {
+            return R.drawable.tile_mediaexplorer;
+        }
+        return -1;
+    }
+
+    private int getTileResource(String packageName) {
+        if (AppDiscovery.CURATED_PACKAGES.contains(packageName)) {
+            return getCuratedTileRes(packageName);
+        }
+        return -1;
+    }
+
+    private int cachedCellWidth = 0;
+
     @NonNull
     @Override
     public Holder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -184,8 +239,12 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         float density = parent.getResources().getDisplayMetrics().density;
         int width = parent.getWidth() > 0 ? parent.getWidth() : parent.getMeasuredWidth();
         int inner = width - parent.getPaddingLeft() - parent.getPaddingRight();
+        if (inner > 0) {
+            cachedCellWidth = inner / dockSize;
+        }
         int w = tileWidthPx(inner, dockSize, density), h = tileHeightPx(w);
         View card = v.findViewById(R.id.card);
+        card.setStateListAnimator(android.animation.AnimatorInflater.loadStateListAnimator(parent.getContext(), R.animator.tile_focus_animator));
         ViewGroup.LayoutParams cardLp = card.getLayoutParams();
         cardLp.width = w;
         cardLp.height = h;
@@ -201,35 +260,97 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
     @Override
     public void onBindViewHolder(@NonNull Holder h, int position) {
         Entry e = items.get(position);
-        h.name.setText(e.name);
-        h.name.setVisibility(position < dockSize ? View.INVISIBLE : View.VISIBLE);   // the dock has no labels
+        int curatedRes = getTileResource(e.pkg);
+        boolean hasBanner = (curatedRes != -1 || e.banner != null);
+        h.name.setVisibility(hasBanner ? View.GONE : (position < dockSize ? View.INVISIBLE : View.VISIBLE));
         boolean focused = h.card.isFocused();   // a rebind after reload() can hit the focused tile
         h.name.setAlpha(focused ? 1f : 0f);
-        h.card.setScaleX(focused ? FOCUS_SCALE : 1f);
-        h.card.setScaleY(focused ? FOCUS_SCALE : 1f);
-        if (e.banner != null) {
+        h.card.setAlpha(focused ? 1.0f : 0.82f);
+
+        // Center tiles horizontally as a group when fewer items are in this row (e.g. 2 apps in secondary row or dock)
+        int totalItems = items.size();
+        int rowStart = (position / dockSize) * dockSize;
+        int rowEnd = Math.min(totalItems, rowStart + dockSize);
+        int rowCount = rowEnd - rowStart;
+        if (rowCount < dockSize) {
+            float density = h.itemView.getResources().getDisplayMetrics().density;
+            int cellW = cachedCellWidth > 0 ? cachedCellWidth : Math.round(200 * density);
+            float shift = ((dockSize - rowCount) * cellW) / 2.0f;
+            h.itemView.setTranslationX(shift);
+        } else {
+            h.itemView.setTranslationX(0f);
+        }
+
+        if (curatedRes != -1) {
+            h.banner.setImageResource(curatedRes);
+            h.banner.setBackground(null);
+            h.banner.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            h.banner.setPadding(0, 0, 0, 0);
+            h.banner.setVisibility(View.VISIBLE);
+            h.icon.setVisibility(View.GONE);
+            h.label.setVisibility(View.GONE);
+        } else if (e.banner != null) {
             h.banner.setImageDrawable(e.banner);
+            h.banner.setBackground(null);
+            h.banner.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            h.banner.setPadding(0, 0, 0, 0);
             h.banner.setVisibility(View.VISIBLE);
             h.icon.setVisibility(View.GONE);
             h.label.setVisibility(View.GONE);
         } else {
-            h.banner.setImageDrawable(null);
-            h.banner.setVisibility(View.GONE);
-            h.icon.setImageDrawable(e.icon);
-            h.icon.setVisibility(View.VISIBLE);
+            // Dynamic fallback banner on charcoal card with centered app icon
+            h.banner.setImageDrawable(e.icon);
+            h.banner.setBackgroundResource(R.drawable.charcoal_card_bg);
+            h.banner.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+            int pad = Math.round(18 * h.itemView.getResources().getDisplayMetrics().density);
+            h.banner.setPadding(pad, pad, pad, pad + Math.round(14 * h.itemView.getResources().getDisplayMetrics().density));
+            h.banner.setVisibility(View.VISIBLE);
+            h.icon.setVisibility(View.GONE);
             h.label.setText(e.label);
             h.label.setVisibility(View.VISIBLE);
         }
         h.card.setOnClickListener(v -> launch(e));
         h.card.setOnLongClickListener(v -> {
-            Intent i = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + e.pkg));
-            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            try {
-                ctx.startActivity(i);
-            } catch (ActivityNotFoundException ignored) {
-            }
+            showSlotConfigDialog(position, e);
             return true;
         });
+    }
+
+    private void showSlotConfigDialog(int position, Entry current) {
+        if (position < 0 || position >= items.size()) return;
+        List<ResolveInfo> installed = AppDiscovery.getLeanbackApps(ctx);
+        if (installed == null || installed.isEmpty()) {
+            Toast.makeText(ctx, "No other apps found", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        PackageManager pm = ctx.getPackageManager();
+        CharSequence[] itemsList = new CharSequence[installed.size() + 1];
+        itemsList[0] = "⚙️ App Details / Settings";
+        for (int i = 0; i < installed.size(); i++) {
+            ResolveInfo ri = installed.get(i);
+            itemsList[i + 1] = ri.loadLabel(pm);
+        }
+
+        new android.app.AlertDialog.Builder(ctx, android.R.style.Theme_DeviceDefault_Dialog_Alert)
+                .setTitle("Customize Slot " + (position + 1) + ": " + current.label)
+                .setItems(itemsList, (dialog, which) -> {
+                    if (which == 0) {
+                        Intent i = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + current.pkg));
+                        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        try {
+                            ctx.startActivity(i);
+                        } catch (ActivityNotFoundException ignored) {}
+                    } else {
+                        ResolveInfo selected = installed.get(which - 1);
+                        String chosenPkg = selected.activityInfo.packageName;
+                        DockPrefs.setSlot(ctx, position, chosenPkg);
+                        Toast.makeText(ctx, "Assigned " + selected.loadLabel(pm) + " to Slot " + (position + 1), Toast.LENGTH_SHORT).show();
+                        reload(Collections.emptyList());
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 
     /** Opens the tile's activity by explicit component, with no extras: a card can name nothing else. */
@@ -238,6 +359,9 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
             ctx.startActivity(new Intent(ctx, HomeSettingsActivity.class)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             return;
+        }
+        if (e.component != null && ctx instanceof MainActivity) {
+            ((MainActivity) ctx).onAppLaunched(e.component.getPackageName());
         }
         Intent i = new Intent(Intent.ACTION_MAIN)
                 .addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER)
@@ -282,6 +406,14 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
     int ambientColorAt(int position) {
         if (position < 0 || position >= items.size()) return 0xFF444444;
         Entry e = items.get(position);
+        if ("in.startv.hotstar".equals(e.pkg)) return 0xFF1475E1;
+        if ("com.google.android.youtube.tv".equals(e.pkg)) return 0xFFFF0000;
+        if ("com.spotify.tv.android".equals(e.pkg)) return 0xFF1ED760;
+        if ("com.netflix.ninja".equals(e.pkg)) return 0xFFE50914;
+        if ("com.amazon.amazonvideo.livingroom".equals(e.pkg)) return 0xFF00A8E1;
+        if ("com.mitv.tvhome.mitvplus".equals(e.pkg)) return 0xFFFF6900;
+        if ("com.xiaomi.mitv.smartshare".equals(e.pkg)) return 0xFF0091FF;
+        if ("com.xiaomi.mitv.mediaexplorer".equals(e.pkg)) return 0xFFFF9500;
         if (e.ambient == 0) e.ambient = vividColor(e.banner != null ? e.banner : e.icon);
         return e.ambient;
     }
@@ -368,13 +500,14 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
 
             card.setOnFocusChangeListener((view, focused) -> {
                 float s = focused ? FOCUS_SCALE : 1.0f;
-                view.animate().scaleX(s).scaleY(s)
-                        .setDuration(focused ? 260 : 180)
-                        .setInterpolator(new OvershootInterpolator(focused ? 1.6f : 0f))
+                float a = focused ? 1.0f : 0.72f;
+                view.animate().scaleX(s).scaleY(s).alpha(a)
+                        .setDuration(focused ? 200 : 160)
+                        .setInterpolator(new DecelerateInterpolator())
                         .start();
                 name.animate().alpha(focused ? 1f : 0f)
                         .translationY(focused ? density * 4f : -density * 6f)
-                        .setDuration(220).start();
+                        .setDuration(160).start();
                 int pos = getBindingAdapterPosition();
                 if (focused && listener != null && pos != RecyclerView.NO_POSITION) {
                     listener.onTileFocused(pos, view);

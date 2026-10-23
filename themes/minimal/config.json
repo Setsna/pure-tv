@@ -1,0 +1,31 @@
+{
+  "dock_apps": [
+    "com.mitv.tvhome.mitvplus",
+    "in.startv.hotstar",
+    "com.google.android.youtube.tv",
+    "com.spotify.tv.android"
+  ],
+  "hidden_apps": [
+    "com.mitv.livetv",
+    "com.android.tv.settings",
+    "com.mitv.gallery",
+    "com.mitv.tvhome.atv",
+    "com.xiaomi.mitv.tvmanager",
+    "com.xiaomi.mitv.manualhelp",
+    "com.google.android.play.games",
+    "com.google.android.videos",
+    "com.google.android.youtube.tvmusic",
+    "com.graymatrix.did",
+    "com.internet.tvbrowser",
+    "com.mxtech.videoplayer.television",
+    "com.sonyliv",
+    "com.xiaomi.mitv.smartshare",
+    "fusion.android.tv.demo"
+  ],
+  "live_tv_package": "com.mitv.livetv",
+  "columns": 4,
+  "rows_below_dock": 0,
+  "module_cards": false,
+  "background_color": "#050505",
+  "wallpaper": false
+}

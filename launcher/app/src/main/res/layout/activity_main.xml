@@ -3,211 +3,475 @@
     android:id="@+id/root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FF000000">
+    android:background="#060608"
+    android:keepScreenOn="true"
+    android:clipChildren="false"
+    android:clipToPadding="false">
 
-    <!-- Ambient glow in the colour of the focused dock app. -->
+    <!-- SINGLE PERMANENT WALLPAPER LAYER (Misty Forest Path by Johannes Plenio) -->
+    <ImageView
+        android:id="@+id/wallpaper"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:src="@drawable/wallpaper_permanent"
+        android:scaleType="centerCrop"
+        android:importantForAccessibility="no" />
+
+    <!-- Subtle top & bottom cinematic vignette so text and glass dock stay 100% legible -->
+    <View
+        android:id="@+id/wallpaperScrim"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/apple_tv_vignette"
+        android:importantForAccessibility="no" />
+
+    <!-- Ambient glow view for legacy theme engine -->
     <View
         android:id="@+id/ambient"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:alpha="0" />
-
-    <!-- Top shelf: the focused dock app's name, positioned above the dock in code. -->
-    <TextView
-        android:id="@+id/heroName"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="68dp"
         android:alpha="0"
-        android:textColor="#FFFFFFFF"
-        android:textSize="48sp"
-        android:fontFamily="@font/outfit"
-        android:fontVariationSettings="'wght' 300"
-        android:letterSpacing="-0.02"
-        android:includeFontPadding="false"
-        android:singleLine="true" />
+        android:visibility="gone" />
 
-    <LinearLayout
+    <!-- 2. INTERACTIVE APPLE TV HOME SCREEN LAYER -->
+    <FrameLayout
+        android:id="@+id/homeContent"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:paddingStart="56dp"
-        android:paddingEnd="56dp"
-        android:paddingTop="26dp">
+        android:clipChildren="false"
+        android:clipToPadding="false">
 
-        <RelativeLayout
+        <!-- Hidden legacy views to preserve bindings in MainActivity without floating clutter -->
+        <TextView
+            android:id="@+id/heroName"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:textSize="0sp"
+            android:textColor="@android:color/transparent"
+            android:alpha="0"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/shamsiDate"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:textSize="0sp"
+            android:textColor="@android:color/transparent"
+            android:alpha="0"
+            android:visibility="gone" />
+
+        <View
+            android:id="@+id/clockDivider"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:alpha="0"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/greeting"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:textSize="0sp"
+            android:textColor="@android:color/transparent"
+            android:alpha="0"
+            android:visibility="gone" />
+
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:paddingStart="56dp"
+            android:paddingEnd="56dp"
+            android:paddingTop="36dp"
+            android:paddingBottom="34dp"
+            android:clipChildren="false"
+            android:clipToPadding="false">
 
-            <LinearLayout
-                android:id="@+id/leftBlock"
+            <!-- ROW 1: MINIMALIST APPLE TV TOP BAR (Clock Left · Weather Right) -->
+            <RelativeLayout
+                android:id="@+id/topBar"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_alignParentStart="true"
-                android:layout_toStartOf="@+id/topButtons"
-                android:layout_marginEnd="16dp"
-                android:orientation="vertical">
+                android:clipChildren="false">
 
-                <TextView
-                    android:id="@+id/greeting"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:singleLine="true"
-                    android:ellipsize="end"
-                    android:layout_marginStart="4dp"
-                    android:textColor="#8CFFFFFF"
-                    android:textSize="12sp"
-                    android:fontFamily="@font/outfit"
-                    android:fontVariationSettings="'wght' 500"
-                    android:letterSpacing="0.22"
-                    android:textAllCaps="true" />
-
+                <!-- Left Column: Clock, AM/PM, Date, and Command Track directly underneath -->
                 <LinearLayout
-                    android:layout_width="match_parent"
+                    android:id="@+id/leftHeaderGroup"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:baselineAligned="true">
+                    android:layout_alignParentStart="true"
+                    android:layout_alignParentTop="true"
+                    android:orientation="vertical">
 
-                    <TextClock
-                        android:id="@+id/clock"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:format12Hour="h:mm"
-                        android:format24Hour="HH:mm"
-                        android:textColor="#FFFFFFFF"
-                        android:textSize="52sp"
-                        android:fontFamily="@font/outfit"
-                        android:fontVariationSettings="'wght' 300"
-                        android:letterSpacing="-0.04"
-                        android:includeFontPadding="false" />
-
-                    <TextClock
-                        android:id="@+id/ampm"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="6dp"
-                        android:layout_gravity="bottom"
-                        android:layout_marginBottom="8dp"
-                        android:format12Hour="a"
-                        android:format24Hour=""
-                        android:textColor="#B3FFFFFF"
-                        android:textSize="15sp"
-                        android:fontFamily="@font/outfit"
-                        android:fontVariationSettings="'wght' 500"
-                        android:letterSpacing="0.08"
-                        android:textAllCaps="true" />
-
-                    <View
-                        android:layout_width="1dp"
-                        android:layout_height="26dp"
-                        android:layout_gravity="bottom"
-                        android:layout_marginStart="16dp"
-                        android:layout_marginEnd="16dp"
-                        android:layout_marginBottom="8dp"
-                        android:background="#33FFFFFF" />
-
+                    <!-- Typographic Clock & Date -->
                     <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_weight="1"
+                        android:id="@+id/clockBlock"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_gravity="bottom"
-                        android:layout_marginBottom="9dp"
                         android:orientation="vertical">
 
-                        <!-- Shamsi date ("27 Mehr 1405"), shown when shamsi_date is on. -->
-                        <TextView
-                            android:id="@+id/shamsiDate"
-                            android:layout_width="match_parent"
+                        <LinearLayout
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:singleLine="true"
-                            android:ellipsize="end"
-                            android:textColor="#E6FFFFFF"
-                            android:textSize="17sp"
-                            android:fontFamily="@font/outfit"
-                            android:fontVariationSettings="'wght' 400"
-                            android:letterSpacing="0.02"
-                            android:includeFontPadding="false"
-                            android:visibility="gone" />
+                            android:gravity="bottom"
+                            android:baselineAligned="true"
+                            android:orientation="horizontal">
+
+                            <TextClock
+                                android:id="@+id/clock"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:format12Hour="h:mm"
+                                android:format24Hour="HH:mm"
+                                android:includeFontPadding="false"
+                                android:textColor="#F5F2EB"
+                                android:textSize="70sp"
+                                android:fontFamily="@font/outfit"
+                                android:fontVariationSettings="'wght' 400"
+                                android:letterSpacing="-0.03" />
+
+                            <TextClock
+                                android:id="@+id/ampm"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="8dp"
+                                android:layout_marginBottom="11dp"
+                                android:format12Hour="a"
+                                android:format24Hour=""
+                                android:includeFontPadding="false"
+                                android:textColor="#C9AE7D"
+                                android:textSize="15sp"
+                                android:fontFamily="@font/outfit"
+                                android:fontVariationSettings="'wght' 600"
+                                android:letterSpacing="0.08"
+                                android:textAllCaps="true" />
+                        </LinearLayout>
 
                         <TextClock
                             android:id="@+id/date"
-                            android:layout_width="match_parent"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:singleLine="true"
-                            android:ellipsize="end"
-                            android:format12Hour="@string/date_format"
-                            android:format24Hour="@string/date_format"
-                            android:textColor="#A6FFFFFF"
-                            android:textSize="14sp"
+                            android:layout_marginTop="4dp"
+                            android:includeFontPadding="false"
+                            android:format12Hour="EEEE · d MMMM yyyy"
+                            android:format24Hour="EEEE · d MMMM yyyy"
+                            android:textColor="#B1B0B0"
+                            android:textSize="13sp"
                             android:fontFamily="@font/outfit"
-                            android:fontVariationSettings="'wght' 400"
+                            android:fontVariationSettings="'wght' 500"
                             android:letterSpacing="0.14"
                             android:textAllCaps="true" />
                     </LinearLayout>
+
+                    <!-- Quick Controls anchored directly below clock -->
+                    <LinearLayout
+                        android:id="@+id/topButtons"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:background="@drawable/command_track_bg"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:padding="4dp"
+                        android:clipChildren="false">
+
+                        <TextView
+                            android:id="@+id/btnLiveTv"
+                            style="@style/TopButton"
+                            android:text="Live TV"
+                            android:drawableStart="@drawable/ic_livetv"
+                            android:nextFocusLeft="@+id/btnSettings"
+                            android:nextFocusRight="@+id/btnInputs"
+                            android:nextFocusUp="@+id/btnLiveTv"
+                            android:nextFocusDown="@+id/grid" />
+
+                        <TextView
+                            android:id="@+id/btnInputs"
+                            style="@style/TopButton"
+                            android:layout_marginStart="4dp"
+                            android:text="@string/inputs"
+                            android:drawableStart="@drawable/ic_input"
+                            android:nextFocusLeft="@+id/btnLiveTv"
+                            android:nextFocusRight="@+id/btnWifi"
+                            android:nextFocusUp="@+id/btnInputs"
+                            android:nextFocusDown="@+id/grid" />
+
+                        <TextView
+                            android:id="@+id/btnWifi"
+                            style="@style/TopButton"
+                            android:layout_marginStart="4dp"
+                            android:text="@string/wifi"
+                            android:drawableStart="@drawable/ic_wifi"
+                            android:nextFocusLeft="@+id/btnInputs"
+                            android:nextFocusRight="@+id/btnSettings"
+                            android:nextFocusUp="@+id/btnWifi"
+                            android:nextFocusDown="@+id/grid" />
+
+                        <TextView
+                            android:id="@+id/btnSettings"
+                            style="@style/TopButton"
+                            android:layout_marginStart="4dp"
+                            android:text="@string/settings"
+                            android:drawableStart="@drawable/ic_settings"
+                            android:nextFocusLeft="@+id/btnWifi"
+                            android:nextFocusRight="@+id/weatherCapsule"
+                            android:nextFocusUp="@+id/weatherCapsule"
+                            android:nextFocusDown="@+id/grid" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Right Column: Compact Single-Tier Weather Capsule -->
+                <LinearLayout
+                    android:id="@+id/weatherCapsule"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentEnd="true"
+                    android:layout_alignParentTop="true"
+                    android:layout_marginStart="24dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="@drawable/glass_capsule_bg"
+                    android:paddingHorizontal="24dp"
+                    android:paddingVertical="12dp"
+                    android:focusable="true"
+                    android:clickable="true"
+                    android:nextFocusLeft="@+id/btnSettings"
+                    android:nextFocusDown="@+id/grid">
+
+                    <TextView
+                        android:id="@+id/tvTemp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/outfit_light"
+                        android:textSize="32sp"
+                        android:textColor="@color/text_primary" />
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_marginStart="16dp">
+
+                        <TextView
+                            android:id="@+id/tvFeelsLike"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textSize="13sp"
+                            android:fontFamily="@font/outfit"
+                            android:textColor="@color/text_secondary" />
+
+                        <TextView
+                            android:id="@+id/tvHumidityWind"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textSize="13sp"
+                            android:fontFamily="@font/outfit"
+                            android:textColor="@color/text_secondary" />
+                    </LinearLayout>
+                </LinearLayout>
+            </RelativeLayout>
+
+            <!-- ROW 3: OPEN NATURE WALLPAPER SHOWCASE SPACE -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <!-- ROW 4: APPLE TV FLOATING GLASS DOCK (4 Main Apps + 4 Secondary on Down) -->
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="148dp"
+                android:clipChildren="true"
+                android:clipToPadding="false">
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/grid"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:clipChildren="false"
+                    android:clipToPadding="false"
+                    android:focusable="true"
+                    android:overScrollMode="never" />
+            </FrameLayout>
+
+            <!-- ROW 5: MINIMAL DRAWER HINT (HIDDEN FOR ZERO CLUTTER) -->
+            <TextView
+                android:id="@+id/exploreHint"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:visibility="gone" />
+        </LinearLayout>
+
+
+        <!-- SUBTLE CORNER SIGNATURE -->
+        <TextView
+            android:id="@+id/brandMark"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_marginEnd="80dp"
+            android:layout_marginBottom="24dp"
+            android:text="MADE BY VARDAN"
+            android:textColor="#29F5F2EB"
+            android:textSize="8.5sp"
+            android:fontFamily="@font/outfit"
+            android:fontVariationSettings="'wght' 400"
+            android:letterSpacing="0.32"
+            android:singleLine="true"
+            android:importantForAccessibility="no" />
+    </FrameLayout>
+
+    <!-- 3. APPLE TV AMBIENT SCREENSAVER OVERLAY (Weather + Time + Date on Idle) -->
+    <FrameLayout
+        android:id="@+id/screensaverOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:alpha="0"
+        android:visibility="gone"
+        android:paddingStart="64dp"
+        android:paddingEnd="64dp"
+        android:paddingBottom="52dp"
+        android:clipChildren="false">
+
+        <LinearLayout
+            android:id="@+id/screensaverHud"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|start"
+            android:maxWidth="420dp"
+            android:background="@drawable/weather_card_bg"
+            android:orientation="vertical"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp"
+            android:paddingTop="16dp"
+            android:paddingBottom="16dp">
+
+            <!-- Wallpaper Title Eyebrow -->
+            <TextView
+                android:id="@+id/ssWallpaperLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="6dp"
+                android:text="JOHANNES PLENIO · MISTY REDWOOD PATH"
+                android:textColor="#C9AE7D"
+                android:textSize="10.5sp"
+                android:fontFamily="@font/outfit"
+                android:fontVariationSettings="'wght' 600"
+                android:letterSpacing="0.14"
+                android:textAllCaps="true" />
+
+            <!-- Apple TV Screensaver Time & Current Weather Row -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextClock
+                    android:id="@+id/ssClock"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:format12Hour="h:mm"
+                    android:format24Hour="HH:mm"
+                    android:includeFontPadding="false"
+                    android:textColor="#F5F2EB"
+                    android:textSize="60sp"
+                    android:fontFamily="@font/outfit"
+                    android:fontVariationSettings="'wght' 400"
+                    android:letterSpacing="-0.03" />
+
+                <TextClock
+                    android:id="@+id/ssAmPm"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginBottom="8dp"
+                    android:format12Hour="a"
+                    android:format24Hour=""
+                    android:includeFontPadding="false"
+                    android:textColor="#C9AE7D"
+                    android:textSize="14sp"
+                    android:fontFamily="@font/outfit"
+                    android:fontVariationSettings="'wght' 600"
+                    android:letterSpacing="0.08"
+                    android:textAllCaps="true" />
+
+                <View
+                    android:layout_width="1dp"
+                    android:layout_height="38dp"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginEnd="16dp"
+                    android:background="#24FFFFFF" />
+
+                <TextView
+                    android:id="@+id/ssWeatherIcon"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="🌙"
+                    android:textSize="30sp" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/ssWeatherTemp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:includeFontPadding="false"
+                        android:text="24°C"
+                        android:textColor="#F5F2EB"
+                        android:textSize="26sp"
+                        android:fontFamily="@font/outfit"
+                        android:fontVariationSettings="'wght' 300" />
+
+                    <TextView
+                        android:id="@+id/ssWeatherDesc"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="1dp"
+                        android:text="Chanakyapuri · Clear"
+                        android:textColor="#B1B0B0"
+                        android:textSize="11.5sp"
+                        android:fontFamily="@font/outfit"
+                        android:fontVariationSettings="'wght' 400" />
                 </LinearLayout>
             </LinearLayout>
 
+            <!-- Bottom Row: Full Date + Forecast Summary -->
             <LinearLayout
-                android:id="@+id/topButtons"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_alignParentEnd="true"
-                android:layout_alignBottom="@id/leftBlock"
-                android:layout_marginBottom="6dp"
+                android:layout_marginTop="10dp"
+                android:gravity="center_vertical"
                 android:orientation="horizontal">
 
-                <TextView
-                    android:id="@+id/btnInputs"
-                    style="@style/TopButton"
-                    android:text="@string/inputs"
-                    android:drawableStart="@drawable/ic_input"
-                    android:nextFocusDown="@+id/grid" />
+                <TextClock
+                    android:id="@+id/ssDate"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:format12Hour="EEEE, d MMMM yyyy"
+                    android:format24Hour="EEEE, d MMMM yyyy"
+                    android:textColor="#B3F5F2EB"
+                    android:textSize="12.5sp"
+                    android:fontFamily="@font/outfit"
+                    android:fontVariationSettings="'wght' 500"
+                    android:letterSpacing="0.14"
+                    android:textAllCaps="true" />
 
                 <TextView
-                    android:id="@+id/btnWifi"
-                    style="@style/TopButton"
-                    android:maxWidth="180dp"
-                    android:singleLine="true"
-                    android:ellipsize="end"
-                    android:text="@string/wifi"
-                    android:drawableStart="@drawable/ic_wifi"
-                    android:nextFocusDown="@+id/grid" />
-
-                <TextView
-                    android:id="@+id/btnSettings"
-                    style="@style/TopButton"
-                    android:text="@string/settings"
-                    android:drawableStart="@drawable/ic_settings"
-                    android:nextFocusDown="@+id/grid" />
+                    android:id="@+id/ssForecastSummary"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:text="·   +3h 29°   ·   +6h 26°   ·   +12h 22°"
+                    android:textColor="#80F5F2EB"
+                    android:textSize="11.5sp"
+                    android:fontFamily="@font/outfit"
+                    android:fontVariationSettings="'wght' 400" />
             </LinearLayout>
-        </RelativeLayout>
-
-        <!-- The wrapper clips at the grid's edge; the grid itself must not clip so scaled tiles can overflow their cells. -->
-        <FrameLayout
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:layout_marginTop="10dp">
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/grid"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:paddingTop="10dp"
-                android:paddingBottom="40dp"
-                android:clipToPadding="false"
-                android:clipChildren="false"
-                android:overScrollMode="never"
-                android:scrollbars="none"
-                android:descendantFocusability="afterDescendants" />
-        </FrameLayout>
-    </LinearLayout>
-
-    <!-- The single floating glass highlight that springs between tiles. -->
-    <com.gathin.tvhome.GlassView
-        android:id="@+id/glass"
-        android:layout_width="10dp"
-        android:layout_height="10dp"
-        android:alpha="0"
-        android:importantForAccessibility="no" />
+        </LinearLayout>
+    </FrameLayout>
 </FrameLayout>

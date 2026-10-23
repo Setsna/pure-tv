@@ -1,6 +1,7 @@
 package com.gathin.tvhome;
 
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.app.Dialog;
 import android.content.ActivityNotFoundException;
 import android.content.BroadcastReceiver;
@@ -9,10 +10,19 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.ApplicationInfo;
+import android.content.res.ColorStateList;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.LinearGradient;
+import android.graphics.Paint;
+import android.graphics.RadialGradient;
 import android.graphics.Rect;
+import android.graphics.Shader;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.GradientDrawable;
+import android.util.DisplayMetrics;
 import android.media.tv.TvContract;
 import android.media.tv.TvInputInfo;
 import android.media.tv.TvInputManager;
@@ -47,24 +57,23 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.dynamicanimation.animation.DynamicAnimation;
-import androidx.dynamicanimation.animation.FloatPropertyCompat;
-import androidx.dynamicanimation.animation.SpringAnimation;
-import androidx.dynamicanimation.animation.SpringForce;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 /**
- * tvOS style home: black, a pinned dock row, an app grid, and one glass highlight that springs between tiles.
+ * tvOS style home: black, a pinned dock row, an app grid, and lightweight native focus animation.
  */
 public class MainActivity extends Activity implements AppAdapter.TileListener {
 
@@ -80,24 +89,85 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private AppAdapter adapter;
     private RecyclerView grid;
     private FrameLayout root;
-    private GlassView glass;
     private View ambient;
     private TextView heroName;
-    private GradientDrawable ambientGlow;
+    private AmbientDrawable ambientDrawable;
     private int ambientColor;
     private boolean heroShown;
     private TextView greeting;
+    private View btnLiveTv;
     private View btnInputs;
     private TextView btnWifi;
+    private TextView btnSettings;
+    private TextView brandMark;
+
+    // 3-minute automatic app memory reaper & system speed optimization
+    private static final long REAP_POLL_INTERVAL_MS = 30_000L; // Check every 30s
+    private static final long LOW_MEM_THRESHOLD_MB = 150L;     // Act when available RAM < 150MB or lowMemory
+    private static final Set<String> PROTECTED_PACKAGES = new HashSet<>(Arrays.asList(
+        "com.google.android.apps.mediashell",
+        "com.xiaomi.mitv.smartshare",
+        "com.mitv.milinkservice",
+        "com.xiaomi.wfdsinkhelperservice",
+        "com.google.android.katniss",
+        "com.google.android.tv.assistant",
+        "com.mitv.livetv",
+        "com.mitv.livetv.ci_mediatek",
+        "com.google.android.inputmethod.latin"
+    ));
+
+    private final Handler memoryReaperHandler = new Handler(Looper.getMainLooper());
+    private final Map<String, Long> exitedAppsTimestamps = new HashMap<>();
+    private String currentlyRunningPkg = null;
+
+    private final Runnable memoryReaperTask = new Runnable() {
+        @Override
+        public void run() {
+            new Thread(() -> {
+                ActivityManager am = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+                if (am == null) return;
+                ActivityManager.MemoryInfo info = new ActivityManager.MemoryInfo();
+                am.getMemoryInfo(info);
+                long availMb = info.availMem / (1024 * 1024);
+
+                if (info.lowMemory || availMb < LOW_MEM_THRESHOLD_MB) {
+                    killExitedStreamingApps(am);
+                }
+            }, "TvMemoryReaper").start();
+            memoryReaperHandler.postDelayed(this, REAP_POLL_INTERVAL_MS);
+        }
+    };
+
+    private void killExitedStreamingApps(ActivityManager am) {
+        String[] streamingTargets = {
+            "in.startv.hotstar",
+            "com.google.android.youtube.tv",
+            "com.netflix.ninja",
+            "com.amazon.amazonvideo.livingroom",
+            "com.mitv.tvhome.mitvplus",
+            "com.mitv.livetv"
+        };
+        boolean cleaned = false;
+        for (String pkg : streamingTargets) {
+            if (!pkg.equals(currentlyRunningPkg) && !PROTECTED_PACKAGES.contains(pkg)) {
+                am.killBackgroundProcesses(pkg);
+                cleaned = true;
+            }
+        }
+        if (cleaned) {
+            System.gc();
+            Runtime.getRuntime().gc();
+        }
+    }
+    private android.widget.TextClock clock;
+    private android.widget.TextClock ampm;
+    private android.widget.TextClock date;
+    private View clockDivider;
+    private boolean isDayMode = false;
+    private DockDecoration dockDecoration;
     private TextView shamsiDate;
     private boolean shamsi;
     private String vpnApp;
-    private SpringAnimation springX, springY;
-    private float glassTargetX, glassTargetY;
-    // How far the grid has scrolled the glass. springY works without it, in grid content space, so a
-    // scroll moves the glass in lockstep with its tile instead of becoming a moving spring target.
-    private float glassScrollShift;
-    private boolean glassShown;
     // Static so they survive the activity being destroyed while another app is open (low-memory TVs,
     // or Developer options → "Don't keep activities"); they only reset when the process dies.
     private static int lastFocused = 0;
@@ -116,6 +186,31 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private boolean promptsPaused;
     /** The Inputs or Module cards dropdown while one is open, so onPause can close it. */
     private PopupWindow openPopup;
+
+    // --- SINGLE PERMANENT WALLPAPER & APPLE TV SCREENSAVER ---
+    private ImageView wallpaper;
+    private View wallpaperScrim;
+    private View homeContent, screensaverOverlay, screensaverHud;
+    private TextView ssWallpaperLabel, ssWeatherIcon, ssWeatherTemp, ssWeatherDesc, ssForecastSummary;
+    private android.widget.TextClock ssClock, ssAmPm, ssDate;
+    private View topButtons;
+    private View launcherContent;
+    private boolean inScreensaver = false;
+    public static Integer sTestHourOfDay = null;
+    private String currentSsid = "";
+
+    // Weather Views
+    private View weatherCapsule;
+    private TextView tvTemp;
+    private TextView tvFeelsLike;
+    private TextView tvHumidityWind;
+    private TextView exploreHint;
+
+    // Apple TV Aerial Idle Watchdog (5 minutes of inactivity on home screen)
+    private static final long SCREENSAVER_TIMEOUT_MS = 5 * 60 * 1000L;
+    private boolean isScreensaverActive = false;
+    private boolean wakeUpKeyHandled = false;
+    private final Runnable screensaverRunnable = () -> showScreensaver(true);
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     /** Refreshes the network pill when the connection changes: at boot Wi-Fi often connects after Home is shown. */
@@ -169,6 +264,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         public void run() {
             updateGreeting();
             updateWifiLabel();
+            updateDayNightTheme();
             handler.postDelayed(this, MINUTE_MS);
         }
     };
@@ -177,6 +273,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        getWindow().setBackgroundDrawable(null);
         density = getResources().getDisplayMetrics().density;
         // config.xml, overlaid by config.json from a pushed theme (see Config and tools/theme.sh).
         Config cfg = Config.load(this);
@@ -190,25 +287,25 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         root = findViewById(R.id.root);
         root.setBackgroundColor(cfg.backgroundColor);
         if (cfg.wallpaper != null) showWallpaper(cfg.wallpaper);
-        glass = findViewById(R.id.glass);
         ambient = findViewById(R.id.ambient);
         heroName = findViewById(R.id.heroName);
-        ambientGlow = new GradientDrawable();
-        ambientGlow.setGradientType(GradientDrawable.RADIAL_GRADIENT);
-        ambientGlow.setGradientCenter(0.32f, 0.42f);
-        ambient.setBackground(ambientGlow);
-        ambient.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) ->
-                ambientGlow.setGradientRadius((r - l) * 0.62f));
+        ambientDrawable = new AmbientDrawable();
+        ambient.setBackground(ambientDrawable);
         greeting = findViewById(R.id.greeting);
+        clock = findViewById(R.id.clock);
+        ampm = findViewById(R.id.ampm);
+        date = findViewById(R.id.date);
+        clockDivider = findViewById(R.id.clockDivider);
         btnWifi = findViewById(R.id.btnWifi);
+        btnLiveTv = findViewById(R.id.btnLiveTv);
+        btnInputs = findViewById(R.id.btnInputs);
+        btnSettings = findViewById(R.id.btnSettings);
+        brandMark = findViewById(R.id.brandMark);
+        exploreHint = findViewById(R.id.exploreHint);
         shamsiDate = findViewById(R.id.shamsiDate);
-        shamsi = cfg.shamsiDate;
-        if (shamsi) {
-            shamsiDate.setVisibility(View.VISIBLE);
-            TextView date = findViewById(R.id.date);
-            date.setTextSize(11f);
-            date.setPadding(0, (int) (4 * density), 0, 0);
-        }
+        shamsi = false;
+        if (shamsiDate != null) shamsiDate.setVisibility(View.GONE);
+        if (greeting != null) greeting.setVisibility(View.GONE);
         vpnApp = cfg.vpnApp;
         moduleCards = cfg.moduleCards;
         hiddenApps = new HashSet<>(cfg.hiddenApps);
@@ -216,59 +313,30 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         grid = findViewById(R.id.grid);
         grid.setLayoutManager(new GridLayoutManager(this, COLUMNS));
         grid.setHasFixedSize(true);
+        grid.setItemViewCacheSize(16);
         grid.setItemAnimator(null);
-        grid.addItemDecoration(new DockDecoration(COLUMNS, density));
+        dockDecoration = new DockDecoration(COLUMNS, density);
+        grid.addItemDecoration(dockDecoration);
         grid.setLayoutAnimation(new LayoutAnimationController(
                 AnimationUtils.loadAnimation(this, R.anim.tile_enter), 0.06f));
         adapter = new AppAdapter(this, this, COLUMNS, cfg);
         grid.setAdapter(adapter);
+        updateDayNightTheme();
 
-        // tvOS layout: push the dock row towards the bottom of the screen, leaving room for
-        // rows_below_dock grid rows under it; the rest of the grid stays below until you press Down.
-        int rowsBelowDock = cfg.rowsBelowDock;
+        // Dock & Explore row padding: provide 14dp headroom and footroom for focus expansion
         grid.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
-            int h = b - t;
-            // Item height follows the tile size, which follows the column count (AppAdapter.tileWidthPx).
-            int inner = (r - l) - grid.getPaddingLeft() - grid.getPaddingRight();
-            int itemH = AppAdapter.itemHeightPx(AppAdapter.tileHeightPx(AppAdapter.tileWidthPx(inner, COLUMNS, density)), density);
-            int dockRow = itemH + (int) ((6 + 12) * density);   // item height plus DockDecoration offsets
-            int gridRows = itemH * rowsBelowDock;
-            int want = Math.max(0, h - dockRow - gridRows - (int) (30 * density));
-            if (grid.getPaddingTop() != want) {
-                grid.setPadding(grid.getPaddingLeft(), want, grid.getPaddingRight(), grid.getPaddingBottom());
+            int pad = (int) (14 * density);
+            if (grid.getPaddingTop() != pad || grid.getPaddingBottom() != pad) {
+                grid.setPadding(grid.getPaddingLeft(), pad, grid.getPaddingRight(), pad);
             }
         });
 
-        // Keep the glass glued to its tile while the grid scrolls.
-        grid.addOnScrollListener(new RecyclerView.OnScrollListener() {
-            @Override
-            public void onScrolled(@NonNull RecyclerView rv, int dx, int dy) {
-                if (!glassShown) return;
-                glassTargetY -= dy;
-                glassScrollShift -= dy;
-                glass.setTranslationY(glass.getTranslationY() - dy);
-            }
-        });
-
-        // Liquid feel: soft springs on the highlight's position.
-        springX = new SpringAnimation(glass, DynamicAnimation.TRANSLATION_X);
-        springY = new SpringAnimation(glass, new FloatPropertyCompat<View>("glassContentY") {
-            @Override
-            public float getValue(View v) {
-                return v.getTranslationY() - glassScrollShift;
-            }
-
-            @Override
-            public void setValue(View v, float value) {
-                v.setTranslationY(value + glassScrollShift);
-            }
-        });
-        for (SpringAnimation s : new SpringAnimation[]{springX, springY}) {
-            s.setSpring(new SpringForce().setStiffness(260f).setDampingRatio(0.58f));
-        }
-
+        btnLiveTv = findViewById(R.id.btnLiveTv);
         btnInputs = findViewById(R.id.btnInputs);
-        View btnSettings = findViewById(R.id.btnSettings);
+        btnSettings = findViewById(R.id.btnSettings);
+        if (btnLiveTv != null) {
+            btnLiveTv.setOnClickListener(v -> openLiveTv());
+        }
         btnInputs.setOnClickListener(v -> showInputs());
         btnWifi.setOnClickListener(v -> openNetworkPill());
         btnWifi.setOnLongClickListener(v -> {
@@ -282,27 +350,51 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             return true;
         });
 
-        // Keep focus on the top bar at its ends and at the top: Android's focus finder would otherwise
-        // jump to a tile far below when there is nothing in that direction.
+        // Keep focus on the top bar at its ends and route predictably to weatherCapsule or stay bounded
         View.OnKeyListener pillKeys = (v, keyCode, event) -> {
             if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
-            if (keyCode == KeyEvent.KEYCODE_DPAD_UP) return true;
+            if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
+                if (v.getId() == R.id.btnSettings) {
+                    View wc = findViewById(R.id.weatherCapsule);
+                    if (wc != null) {
+                        wc.requestFocus();
+                        return true;
+                    }
+                }
+                return true;
+            }
             if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT) {
-                // The left end is Inputs, or Wi-Fi on a box without inputs.
+                // The left end is Live TV, or Inputs, or Wi-Fi on a box without inputs.
+                if (btnLiveTv != null && btnLiveTv.getVisibility() == View.VISIBLE) {
+                    return v.getId() == R.id.btnLiveTv;
+                }
                 return v.getId() == R.id.btnInputs
                         || (v.getId() == R.id.btnWifi && btnInputs.getVisibility() != View.VISIBLE);
             }
-            return keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && v.getId() == R.id.btnSettings;
+            if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && v.getId() == R.id.btnSettings) {
+                View wc = findViewById(R.id.weatherCapsule);
+                if (wc != null) {
+                    wc.requestFocus();
+                    return true;
+                }
+                return true;
+            }
+            return false;
         };
+        if (btnLiveTv != null) btnLiveTv.setOnKeyListener(pillKeys);
         btnInputs.setOnKeyListener(pillKeys);
         btnWifi.setOnKeyListener(pillKeys);
         btnSettings.setOnKeyListener(pillKeys);
 
-        // Hide the glass when focus leaves the tiles.
-        getWindow().getDecorView().getViewTreeObserver().addOnGlobalFocusChangeListener((oldF, newF) -> {
-            boolean onTile = newF != null && newF.getId() == R.id.card;
-            if (!onTile) hideGlass();
-        });
+        // Subtle 1.02x scale feedback on focused quick control pills (P3 polish)
+        View.OnFocusChangeListener pillFocusScale = (v, focused) -> {
+            float s = focused ? 1.02f : 1.0f;
+            v.animate().scaleX(s).scaleY(s).setDuration(160).start();
+        };
+        if (btnLiveTv != null) btnLiveTv.setOnFocusChangeListener(pillFocusScale);
+        btnInputs.setOnFocusChangeListener(pillFocusScale);
+        btnWifi.setOnFocusChangeListener(pillFocusScale);
+        btnSettings.setOnFocusChangeListener(pillFocusScale);
 
         packageFilter.addAction(Intent.ACTION_PACKAGE_ADDED);
         packageFilter.addAction(Intent.ACTION_PACKAGE_REMOVED);
@@ -319,6 +411,19 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                     .removeCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
                     .build(), vpnCallback);
         }
+
+        homeContent = findViewById(R.id.homeContent);
+        launcherContent = homeContent;
+        topButtons = findViewById(R.id.topButtons);
+        isScreensaverActive = false;
+        inScreensaver = false;
+
+        initPermanentWallpaperAndScreensaver();
+
+        initWeatherViews();
+        updateDayNightTheme();
+        refreshWeather();
+        resetInactivityTimer();
     }
 
     /**
@@ -348,8 +453,34 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     }
 
     @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        if (intent != null) {
+            if (intent.hasExtra("test_hour")) {
+                int h = intent.getIntExtra("test_hour", -1);
+                sTestHourOfDay = (h >= 0) ? h : null;
+                updateDayNightTheme();
+            }
+            refreshWeather();
+        }
+    }
+
+    @Override
     protected void onResume() {
         super.onResume();
+        if (currentlyRunningPkg != null) {
+            exitedAppsTimestamps.put(currentlyRunningPkg, System.currentTimeMillis());
+            currentlyRunningPkg = null;
+        }
+        memoryReaperHandler.removeCallbacks(memoryReaperTask);
+        memoryReaperHandler.postDelayed(memoryReaperTask, REAP_POLL_INTERVAL_MS);
+        if (getIntent() != null) {
+            if (getIntent().hasExtra("test_hour")) {
+                int h = getIntent().getIntExtra("test_hour", -1);
+                sTestHourOfDay = (h >= 0) ? h : null;
+            }
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(packageReceiver, packageFilter, Context.RECEIVER_NOT_EXPORTED);
         } else {
@@ -361,7 +492,18 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         updateGreeting();
         updateWifiLabel();
         updateInputsButton();
+        updateDayNightTheme();
         handler.postDelayed(minuteTick, MINUTE_MS);
+        refreshWeather();
+        if (!isScreensaverActive) {
+            resetInactivityTimer();
+        }
+    }
+
+    public void onAppLaunched(String pkg) {
+        currentlyRunningPkg = pkg;
+        exitedAppsTimestamps.remove(pkg); // Active app: clear exit timer
+        memoryReaperHandler.removeCallbacks(memoryReaperTask);
     }
 
     /** Rebuilds the tiles (and the module cards), then puts focus back where it was. */
@@ -371,8 +513,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         final int returnSlot = lastFocused;
         final boolean restoreFocus = animate || grid.hasFocus();
         if (restoreFocus) {
-            glassShown = false;
-            glass.setAlpha(0f);
             heroShown = false;
             heroName.setAlpha(0f);
             ambient.setAlpha(0f);
@@ -416,6 +556,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
      * reload() the view that holds focus may no longer show the app it had.
      */
     private void restoreFocus() {
+        if (inScreensaver || isScreensaverActive) {
+            tilesReady = true;
+            return;
+        }
         final String returnKey = lastFocusedKey;
         final int returnSlot = lastFocused;
         grid.post(() -> {
@@ -429,11 +573,22 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     @Override
     protected void onPause() {
         super.onPause();
+        memoryReaperHandler.removeCallbacks(memoryReaperTask);
+        handler.removeCallbacks(screensaverRunnable);
         unregisterReceiver(packageReceiver);
         handler.removeCallbacks(minuteTick);
         // Nothing of ours stays on screen over another app; an undecided prompt simply returns next time.
         if (cardPrompt != null) cardPrompt.dismiss();
         if (openPopup != null) openPopup.dismiss();
+    }
+
+    @Override
+    public void onTrimMemory(int level) {
+        super.onTrimMemory(level);
+        if (level >= TRIM_MEMORY_RUNNING_LOW) {
+            ActivityManager am = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+            if (am != null) killExitedStreamingApps(am);
+        }
     }
 
     @Override
@@ -445,6 +600,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        memoryReaperHandler.removeCallbacks(memoryReaperTask);
         ConnectivityManager cm = getSystemService(ConnectivityManager.class);
         TvInputManager tim = (TvInputManager) getSystemService(TV_INPUT_SERVICE);
         if (tim != null) tim.unregisterCallback(inputCallback);
@@ -456,56 +612,286 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     @Override
     public void onBackPressed() {
+        if (launcherContent != null && launcherContent.getVisibility() == View.VISIBLE) {
+            if (grid != null && lastFocused >= COLUMNS) {
+                grid.smoothScrollToPosition(0);
+                RecyclerView.ViewHolder vh = grid.findViewHolderForAdapterPosition(0);
+                if (vh != null) {
+                    View card = vh.itemView.findViewById(R.id.card);
+                    if (card != null) card.requestFocus();
+                }
+                if (exploreHint != null) {
+                    exploreHint.setText("▾  More Apps");
+                    exploreHint.setTextColor(0x66FFFFFF);
+                }
+                return;
+            }
+            toggleLauncherApps();
+            return;
+        }
         // Home screen: Back goes nowhere.
     }
 
-    // ---- glass highlight -------------------------------------------------------------------------
+    @Override
+    public boolean dispatchKeyEvent(KeyEvent event) {
+        if (inScreensaver || isScreensaverActive) {
+            if (event.getAction() == KeyEvent.ACTION_DOWN) {
+                wakeUpKeyHandled = true;
+                exitScreensaver();
+            }
+            return true; // Consume any remote key to return directly to homescreen
+        }
+        if (wakeUpKeyHandled) {
+            if (event.getAction() == KeyEvent.ACTION_UP) {
+                wakeUpKeyHandled = false;
+                return true; // Consume the trailing ACTION_UP of the wake-up button press
+            }
+            wakeUpKeyHandled = false;
+        }
+        resetInactivityTimer();
+        if (event.getAction() == KeyEvent.ACTION_DOWN) {
+            if (event.getKeyCode() == KeyEvent.KEYCODE_MENU) {
+                toggleLauncherApps();
+                return true;
+            }
+            if (event.getKeyCode() == KeyEvent.KEYCODE_TV_INPUT) {
+                showInputs();
+                return true;
+            }
+        }
+        return super.dispatchKeyEvent(event);
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(android.view.MotionEvent ev) {
+        if (inScreensaver || isScreensaverActive) {
+            if (ev.getAction() == android.view.MotionEvent.ACTION_DOWN) {
+                exitScreensaver();
+            }
+            return true;
+        }
+        resetInactivityTimer();
+        return super.dispatchTouchEvent(ev);
+    }
+
+    @Override
+    public boolean dispatchGenericMotionEvent(android.view.MotionEvent ev) {
+        if (inScreensaver || isScreensaverActive) {
+            exitScreensaver();
+            return true;
+        }
+        resetInactivityTimer();
+        return super.dispatchGenericMotionEvent(ev);
+    }
+
+    @Override
+    public void onUserInteraction() {
+        super.onUserInteraction();
+        if (!inScreensaver && !isScreensaverActive) {
+            resetInactivityTimer();
+        }
+    }
+
+    private void toggleLauncherApps() {
+        if (inScreensaver || isScreensaverActive) {
+            exitScreensaver();
+        } else {
+            enterScreensaver();
+        }
+    }
+
+    private void initPermanentWallpaperAndScreensaver() {
+        wallpaper = findViewById(R.id.wallpaper);
+        wallpaperScrim = findViewById(R.id.wallpaperScrim);
+        homeContent = findViewById(R.id.homeContent);
+        screensaverOverlay = findViewById(R.id.screensaverOverlay);
+        screensaverHud = findViewById(R.id.screensaverHud);
+        ssWallpaperLabel = findViewById(R.id.ssWallpaperLabel);
+        if (ssWallpaperLabel != null) {
+            ssWallpaperLabel.setText("JOHANNES PLENIO · MISTY REDWOOD PATH");
+        }
+        ssClock = findViewById(R.id.ssClock);
+        ssAmPm = findViewById(R.id.ssAmPm);
+        ssDate = findViewById(R.id.ssDate);
+        ssWeatherIcon = findViewById(R.id.ssWeatherIcon);
+        ssWeatherTemp = findViewById(R.id.ssWeatherTemp);
+        ssWeatherDesc = findViewById(R.id.ssWeatherDesc);
+        ssForecastSummary = findViewById(R.id.ssForecastSummary);
+
+        // Ensure permanent wallpaper is bound
+        if (wallpaper != null) {
+            wallpaper.setImageResource(R.drawable.wallpaper_permanent);
+        }
+    }
+
+    private void enterScreensaver() {
+        if (inScreensaver) return;
+        inScreensaver = true;
+        isScreensaverActive = true;
+        if (homeContent != null) {
+            homeContent.animate().alpha(0f).setDuration(600)
+                    .withEndAction(() -> homeContent.setVisibility(View.INVISIBLE)).start();
+        }
+
+        if (screensaverOverlay != null && screensaverHud != null) {
+            screensaverOverlay.setClickable(true);
+            screensaverOverlay.setFocusable(true);
+            screensaverOverlay.setOnClickListener(v -> exitScreensaver());
+            screensaverOverlay.setVisibility(View.VISIBLE);
+            // Default HUD position: bottom start with generous margins
+            FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) screensaverHud.getLayoutParams();
+            lp.gravity = Gravity.BOTTOM | Gravity.START;
+            screensaverHud.setLayoutParams(lp);
+
+            screensaverOverlay.animate().alpha(1f).setDuration(800).start();
+        }
+        refreshWeather();
+    }
+
+    private void exitScreensaver() {
+        if (!inScreensaver && !isScreensaverActive) return;
+        inScreensaver = false;
+        isScreensaverActive = false;
+        if (screensaverOverlay != null) {
+            screensaverOverlay.setClickable(false);
+            screensaverOverlay.setFocusable(false);
+            screensaverOverlay.animate().alpha(0f).setDuration(250)
+                    .withEndAction(() -> screensaverOverlay.setVisibility(View.GONE)).start();
+        }
+        if (homeContent != null) {
+            homeContent.setVisibility(View.VISIBLE);
+            homeContent.animate().alpha(1f).setDuration(250).start();
+        }
+        restoreFocus();
+        resetInactivityTimer();
+    }
+
+    private void showScreensaver(boolean show) {
+        if (show) enterScreensaver();
+        else exitScreensaver();
+    }
+
+    private void initWeatherViews() {
+        weatherCapsule = findViewById(R.id.weatherCapsule);
+        tvTemp = findViewById(R.id.tvTemp);
+        tvFeelsLike = findViewById(R.id.tvFeelsLike);
+        tvHumidityWind = findViewById(R.id.tvHumidityWind);
+
+        if (weatherCapsule != null) {
+            weatherCapsule.setFocusable(true);
+            weatherCapsule.setClickable(true);
+            weatherCapsule.setOnClickListener(v -> {
+                Intent intent = new Intent(this, WeatherGlassActivity.class);
+                startActivity(intent);
+                overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
+            });
+            weatherCapsule.setOnKeyListener((v, keyCode, event) -> {
+                if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
+                if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT || keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
+                    if (btnSettings != null) btnSettings.requestFocus();
+                    return true;
+                }
+                if (keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER) {
+                    v.performClick();
+                    return true;
+                }
+                if (keyCode == KeyEvent.KEYCODE_DPAD_UP || keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
+                    return true; // clamp within overscan bounds
+                }
+                return false;
+            });
+            weatherCapsule.setOnFocusChangeListener((v, focused) -> {
+                float s = focused ? 1.04f : 1.0f;
+                v.animate().scaleX(s).scaleY(s).setDuration(150).start();
+                GradientDrawable gd = new GradientDrawable();
+                gd.setCornerRadius(24 * density);
+                if (focused) {
+                    gd.setColor(isDayMode ? 0x99FFFFFF : 0xE6262932);
+                    gd.setStroke((int) (2 * density), isDayMode ? 0x99B79A63 : 0xB3C9AE7D);
+                } else {
+                    gd.setColor(isDayMode ? 0x80F5F4EF : 0xD61B1D23);
+                    gd.setStroke((int) Math.max(1, 1 * density), isDayMode ? 0x26191A1F : 0x26F5F2EB);
+                }
+                v.setBackground(gd);
+            });
+        }
+    }
+
+    private void refreshWeather() {
+        new WeatherHelper(this).fetchWeather(28.5983, 77.1897, new WeatherHelper.WeatherCallback() {
+            @Override
+            public void onResult(WeatherHelper.WeatherData data) {
+                if (isFinishing() || isDestroyed()) return;
+                if (tvTemp != null) {
+                    tvTemp.setText(Math.round(data.tempC) + "°");
+                    tvTemp.setTextColor(isDayMode ? 0xFF191A1F : 0xFFF5F2EB);
+                }
+                if (tvFeelsLike != null) {
+                    tvFeelsLike.setText("Feels " + Math.round(data.feelsLikeC) + "° · " + data.getWeatherDescription());
+                    tvFeelsLike.setTextColor(isDayMode ? 0xFF666973 : 0xFFB1B0B0);
+                }
+                if (tvHumidityWind != null) {
+                    tvHumidityWind.setText(data.humidity + "% · " + Math.round(data.windKmh) + " km/h");
+                    tvHumidityWind.setTextColor(isDayMode ? 0xFF666973 : 0xFFB1B0B0);
+                }
+
+                // Sync with Screensaver HUD
+                if (ssWeatherIcon != null) {
+                    ssWeatherIcon.setText(data.getWeatherIcon());
+                }
+                if (ssWeatherTemp != null) {
+                    ssWeatherTemp.setText(Math.round(data.tempC) + "°C");
+                }
+                if (ssWeatherDesc != null) {
+                    ssWeatherDesc.setText("Chanakyapuri · " + data.getWeatherDescription());
+                }
+                if (ssForecastSummary != null) {
+                    ssForecastSummary.setText("Humidity " + data.humidity + "% · Wind " + Math.round(data.windKmh) + " km/h");
+                }
+            }
+
+            @Override
+            public void onError() {
+                // UI already served from cache or maintains graceful state
+            }
+        });
+    }
+
+    private void resetInactivityTimer() {
+        handler.removeCallbacks(screensaverRunnable);
+        if (!inScreensaver && homeContent != null && homeContent.getVisibility() == View.VISIBLE) {
+            handler.postDelayed(screensaverRunnable, SCREENSAVER_TIMEOUT_MS);
+        }
+    }
+
+    // ---- tile focus ------------------------------------------------------------------------------
 
     @Override
     public void onTileFocused(int position, View card) {
         lastFocused = position;
         lastFocusedKey = adapter.keyAt(position);
-        // Tile rect in root coordinates, using layout positions (ignores the scale animation).
-        Rect r = new Rect(0, 0, card.getWidth(), card.getHeight());
-        root.offsetDescendantRectToMyCoords(card, r);
-        float pad = 6f * density;        // matches GlassView's glow inset
-        float w = card.getWidth() * AppAdapter.FOCUS_SCALE + 2 * pad;
-        float h = card.getHeight() * AppAdapter.FOCUS_SCALE + 2 * pad;
-        float x = r.exactCenterX() - w / 2f;
-        float y = r.exactCenterY() - h / 2f;
-
-        ViewGroup.LayoutParams lp = glass.getLayoutParams();
-        if (lp.width != (int) w || lp.height != (int) h) {
-            lp.width = (int) w;
-            lp.height = (int) h;
-            glass.setLayoutParams(lp);
-            glass.setRadius(AppAdapter.cornerRadius(card.getWidth(), density) * AppAdapter.FOCUS_SCALE + pad);
-        }
-        glassTargetX = x;
-        glassTargetY = y;
-        if (!glassShown) {
-            springX.cancel();
-            springY.cancel();
-            glass.setTranslationX(x);
-            glass.setTranslationY(y);
-            glass.animate().alpha(1f).setDuration(180).start();
-            glassShown = true;
-        } else {
-            springX.animateToFinalPosition(x);
-            springY.animateToFinalPosition(y - glassScrollShift);
-        }
-        View item = (View) card.getParent();
         if (position < COLUMNS) {
-            // Dock: park it at the bottom of the screen and show the top shelf for this app.
-            int decoratedTop = item.getTop() - (int) (6 * density);
-            int dy = decoratedTop - grid.getPaddingTop();
-            if (Math.abs(dy) > 1) grid.smoothScrollBy(0, dy);
-            showHero(position, r.top - dy);
+            // Dock: smoothly return to top offset so main 4 apps sit cleanly in frame
+            int offset = grid.computeVerticalScrollOffset();
+            if (offset > 0) {
+                grid.smoothScrollBy(0, -offset);
+            }
+            showHero(position, card.getTop());
+            if (exploreHint != null) {
+                exploreHint.setText("▾  More Apps");
+                exploreHint.setTextColor(0x66FFFFFF);
+            }
         } else {
             hideHero();
-            // Scroll just enough so the whole glass (not only the tile) is visible.
-            Rect want = new Rect(0, -(int) pad * 2, item.getWidth(), item.getHeight() + (int) pad);
-            grid.requestChildRectangleOnScreen(item, want, false);
+            View item = (View) card.getParent();
+            if (item != null) {
+                Rect want = new Rect(0, 0, item.getWidth(), item.getHeight());
+                grid.requestChildRectangleOnScreen(item, want, false);
+            }
+            if (exploreHint != null) {
+                exploreHint.setText("▲  Main Apps");
+                exploreHint.setTextColor(0x99FFFFFF);
+            }
         }
     }
 
@@ -517,36 +903,29 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         float y = dockTopInRoot - 14 * density - 26 * density - heroName.getHeight();
         boolean changed = !label.contentEquals(heroName.getText());
 
+        if (heroName != null) {
+            heroName.setVisibility(View.GONE);
+            heroName.setAlpha(0f);
+        }
         if (!heroShown) {
-            heroName.setText(label);
-            heroName.setY(y);
-            heroName.setTranslationX(0f);
-            heroName.animate().alpha(1f).setDuration(260).start();
             setAmbient(color);
             ambient.animate().alpha(1f).setDuration(600).start();
             heroShown = true;
         } else if (changed) {
-            heroName.animate().alpha(0f).translationX(-12 * density).setDuration(120).withEndAction(() -> {
-                heroName.setText(label);
-                heroName.setY(y);
-                heroName.setTranslationX(12 * density);
-                heroName.animate().alpha(1f).translationX(0f).setDuration(200).start();
-            }).start();
             if (color != ambientColor) {
                 ambient.animate().alpha(0.35f).setDuration(200).withEndAction(() -> {
                     setAmbient(color);
                     ambient.animate().alpha(1f).setDuration(500).start();
                 }).start();
             }
-        } else {
-            heroName.setY(y);
         }
     }
 
     private void setAmbient(int color) {
         ambientColor = color;
-        int c = color & 0x00FFFFFF;
-        ambientGlow.setColors(new int[]{0x5C000000 | c, 0x26000000 | c, 0x00000000 | c});
+        if (ambientDrawable != null) {
+            ambientDrawable.updateChromaticField(color, 0, isDayMode);
+        }
     }
 
     private void hideHero() {
@@ -554,12 +933,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         heroShown = false;
         heroName.animate().alpha(0f).setDuration(160).start();
         ambient.animate().alpha(0f).setDuration(300).start();
-    }
-
-    private void hideGlass() {
-        if (!glassShown) return;
-        glassShown = false;
-        glass.animate().alpha(0f).setDuration(160).start();
     }
 
     // ---- navigation ------------------------------------------------------------------------------
@@ -576,13 +949,34 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
             return position % COLUMNS == COLUMNS - 1 || position == count - 1;
         }
+        int lastRowStart = ((count - 1) / COLUMNS) * COLUMNS;
+        int lastRowCount = count - lastRowStart;
         if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
-            if (position < COLUMNS) return false;          // dock row: let focus move to the top bar
-            target = position - COLUMNS;
+            if (position < COLUMNS) {
+                if (btnLiveTv != null) {
+                    btnLiveTv.requestFocus();
+                    return true;
+                }
+                return false;
+            }
+            if (position >= lastRowStart && lastRowCount < COLUMNS) {
+                // Centered row going up: map upward intuitively based on visual position
+                int colInRow = position - lastRowStart;
+                int shiftCols = (COLUMNS - lastRowCount) / 2;
+                target = colInRow + shiftCols;
+            } else {
+                target = position - COLUMNS;
+            }
         } else {
-            int lastRowStart = ((count - 1) / COLUMNS) * COLUMNS;
             if (position >= lastRowStart) return true;     // already on the last row: stay put
-            target = Math.min(position + COLUMNS, count - 1);
+            if (lastRowCount < COLUMNS) {
+                int shiftCols = (COLUMNS - lastRowCount) / 2;
+                int colInRow = position - shiftCols;
+                colInRow = Math.max(0, Math.min(colInRow, lastRowCount - 1));
+                target = lastRowStart + colInRow;
+            } else {
+                target = Math.min(position + COLUMNS, count - 1);
+            }
         }
         focusTile(target);
         return true;
@@ -630,6 +1024,121 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (shamsi) shamsiDate.setText(Shamsi.today());
     }
 
+    private void updateDayNightTheme() {
+        boolean forceObsidian = getResources().getBoolean(R.bool.force_obsidian_theme);
+        int hour = (sTestHourOfDay != null) ? sTestHourOfDay : Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
+        boolean day = !forceObsidian && (hour >= 6 && hour < 18);
+        isDayMode = day;
+
+        // Visual tokens (Night: OLED Cinema / Midnight Glass; Day: Warm Minimal)
+        int bgColor = day ? 0xFFF2F0EB : 0xFF090A0C;
+        int primaryText = day ? 0xFF191A1F : 0xFFF5F2EB;
+        int secondaryText = day ? 0xFF666973 : 0xFFB1B0B0;
+        int tertiaryText = day ? 0xFF858792 : 0xFF777A84;
+        int warmAccent = day ? 0xFFB79A63 : 0xFFC9AE7D;
+        int focusAccent = day ? 0xFF3979C6 : 0xFF87B9EA;
+        int glassCard = day ? 0x80F5F4EF : 0xD61B1D23;     // Neutral charcoal glass: #1B1D23
+        int glassControl = day ? 0x80F6F5F1 : 0xD1191B20;  // Neutral control glass: #191B20
+        int glassBorder = day ? 0x26191A1F : 0x26F5F2EB;   // Warm ivory translucent edge: 15% #F5F2EB
+
+        root.setBackgroundColor(bgColor);
+        if (wallpaperScrim != null) {
+            wallpaperScrim.setBackgroundResource(day ? R.drawable.day_warm_vignette : R.drawable.apple_tv_vignette);
+            wallpaperScrim.animate().alpha(1.0f).setDuration(300).start();
+        }
+        if (clock != null) clock.setTextColor(0xFFF5F2EB);
+        if (ampm != null) ampm.setTextColor(warmAccent);
+        if (date != null) date.setTextColor(secondaryText);
+        if (greeting != null) greeting.setTextColor(warmAccent);
+        if (clockDivider != null) clockDivider.setBackgroundColor(glassBorder);
+        if (heroName != null) heroName.setTextColor(primaryText);
+        if (ambientDrawable != null && ambientColor != 0) {
+            ambientDrawable.updateChromaticField(ambientColor, 0, day);
+        }
+        if (brandMark != null) brandMark.setTextColor(day ? 0x40191A1F : 0x33F5F5F7);
+        if (exploreHint != null) exploreHint.setVisibility(View.GONE);
+
+        View weatherCapsule = findViewById(R.id.weatherCapsule);
+        View topButtons = findViewById(R.id.topButtons);
+        if (weatherCapsule != null) {
+            android.graphics.drawable.GradientDrawable gd = new android.graphics.drawable.GradientDrawable();
+            gd.setColor(glassCard);
+            gd.setCornerRadius(24 * density);
+            gd.setStroke((int) Math.max(1, 1 * density), glassBorder);
+            weatherCapsule.setBackground(gd);
+        }
+        if (topButtons != null) {
+            android.graphics.drawable.GradientDrawable gd = new android.graphics.drawable.GradientDrawable();
+            gd.setColor(glassControl);
+            gd.setCornerRadius(999 * density);
+            gd.setStroke((int) Math.max(1, 1 * density), glassBorder);
+            topButtons.setBackground(gd);
+        }
+        if (dockDecoration != null) {
+            dockDecoration.setDayMode(day);
+            if (grid != null) grid.invalidateItemDecorations();
+        }
+
+        // Focused & resting state colors for command track
+        int focusBgColor = day ? 0xE6FFFFFF : 0xFFF5F5F7;
+        int focusTextColor = day ? 0xFF191A1F : 0xFF090A0C;
+        int restingTextColor = primaryText;
+
+        int[][] states = new int[][] {
+            new int[] { android.R.attr.state_focused },
+            new int[] { }
+        };
+        int[] textColors = new int[] { focusTextColor, restingTextColor };
+        android.content.res.ColorStateList pillColorStateList = new android.content.res.ColorStateList(states, textColors);
+
+        TextView[] pButtons = new TextView[] {
+            (btnLiveTv instanceof TextView) ? (TextView) btnLiveTv : null,
+            (btnInputs instanceof TextView) ? (TextView) btnInputs : null,
+            btnWifi,
+            btnSettings
+        };
+        for (TextView btn : pButtons) {
+            if (btn == null) continue;
+            btn.setTextColor(pillColorStateList);
+            btn.setCompoundDrawableTintList(pillColorStateList);
+
+            android.graphics.drawable.StateListDrawable sld = new android.graphics.drawable.StateListDrawable();
+            android.graphics.drawable.GradientDrawable focusedDrawable = new android.graphics.drawable.GradientDrawable();
+            focusedDrawable.setColor(focusBgColor);
+            focusedDrawable.setCornerRadius(999 * density);
+
+            android.graphics.drawable.ColorDrawable normalDrawable = new android.graphics.drawable.ColorDrawable(0x00000000);
+            sld.addState(new int[] { android.R.attr.state_focused }, focusedDrawable);
+            sld.addState(new int[] { }, normalDrawable);
+            btn.setBackground(sld);
+        }
+
+        if (tvTemp != null) tvTemp.setTextColor(primaryText);
+        if (tvFeelsLike != null) tvFeelsLike.setTextColor(secondaryText);
+        if (tvHumidityWind != null) tvHumidityWind.setTextColor(secondaryText);
+
+        // Screensaver HUD day/night styling
+        if (screensaverHud != null) {
+            android.graphics.drawable.GradientDrawable sg = new android.graphics.drawable.GradientDrawable();
+            sg.setColor(glassCard);
+            sg.setCornerRadius(28 * density);
+            sg.setStroke((int) Math.max(1, 1 * density), glassBorder);
+            screensaverHud.setBackground(sg);
+        }
+        if (ssWallpaperLabel != null) ssWallpaperLabel.setTextColor(warmAccent);
+        if (ssClock != null) ssClock.setTextColor(primaryText);
+        if (ssAmPm != null) ssAmPm.setTextColor(secondaryText);
+        if (ssDate != null) ssDate.setTextColor(secondaryText);
+        if (ssWeatherTemp != null) ssWeatherTemp.setTextColor(primaryText);
+        if (ssWeatherDesc != null) ssWeatherDesc.setTextColor(secondaryText);
+        if (ssForecastSummary != null) ssForecastSummary.setTextColor(tertiaryText);
+
+        if (dockDecoration != null) {
+            dockDecoration.setDayMode(day);
+            grid.invalidateItemDecorations();
+        }
+    }
+
     /** Shows the Wi-Fi network name on the button when we can read it, otherwise the connection type. */
     private void updateWifiLabel() {
         String text = getString(R.string.wifi);
@@ -663,7 +1172,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 String ssid = info != null ? info.getSSID() : null;
                 if (ssid != null) {
                     ssid = ssid.replace("\"", "").trim();
-                    if (!ssid.isEmpty() && !ssid.contains("unknown") && !ssid.equals("0x")) text = ssid;
+                    if (!ssid.isEmpty() && !ssid.contains("unknown") && !ssid.equals("0x")) {
+                        text = ssid;
+                        currentSsid = ssid;
+                    }
                 }
             }
         } catch (Exception ignored) {
@@ -685,6 +1197,16 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             label.setSpan(span, text.length() + 1, label.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             btnWifi.setText(label);
         } else {
+            // Ellipsize the SSID (variable) in code, not the static "Wi-Fi" label in XML.
+            // The Wi-Fi label and Ethernet / Offline strings are short and must never be clipped.
+            if (!text.equals(getString(R.string.wifi))
+                    && !text.equals(getString(R.string.ethernet))
+                    && !text.equals(getString(R.string.offline))) {
+                TextPaint paint = btnWifi.getPaint();
+                // Allow up to 120dp worth of space for a long SSID.
+                float maxPx = 120 * density;
+                text = TextUtils.ellipsize(text, paint, maxPx, TextUtils.TruncateAt.END).toString();
+            }
             btnWifi.setText(text);
         }
         btnWifi.setCompoundDrawablesRelativeWithIntrinsicBounds(icon, 0, 0, 0);
@@ -692,9 +1214,33 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     /** The network pill opens the VPN app when one is configured and installed, otherwise Wi-Fi settings. */
     private void openNetworkPill() {
+        if (currentSsid != null && !currentSsid.isEmpty() && !currentSsid.equals(getString(R.string.wifi))) {
+            Toast.makeText(this, "Wi-Fi: " + currentSsid, Toast.LENGTH_SHORT).show();
+        }
         Intent i = vpnApp.isEmpty() ? null : getPackageManager().getLeanbackLaunchIntentForPackage(vpnApp);
         if (i == null && !vpnApp.isEmpty()) i = getPackageManager().getLaunchIntentForPackage(vpnApp);
         open(i != null ? i : new Intent(Settings.ACTION_WIFI_SETTINGS));
+    }
+
+    /** Direct shortcut to HDMI 2 for Airtel Xstream Set Top Box */
+    private void openLiveTv() {
+        onAppLaunched("com.mitv.livetv");
+        TvInputManager tim = (TvInputManager) getSystemService(TV_INPUT_SERVICE);
+        String targetInput = "com.mediatek.tvinput/.hdmi.HDMIInputService/HW5";
+        if (tim != null) {
+            for (TvInputInfo info : tim.getTvInputList()) {
+                if (info.isPassthroughInput() && info.getType() == TvInputInfo.TYPE_HDMI) {
+                    CharSequence label = info.loadLabel(this);
+                    String lbl = label != null ? label.toString().toUpperCase(Locale.ROOT) : "";
+                    String id = info.getId();
+                    if (lbl.contains("AIRTEL") || lbl.contains("XSTREAM") || id.contains("HW5") || lbl.contains("2")) {
+                        targetInput = id;
+                        break;
+                    }
+                }
+            }
+        }
+        openInput(targetInput);
     }
 
     /** Hides the Inputs pill when it would have nothing to list: streaming boxes have no HDMI-in, AV or tuner. */
@@ -737,10 +1283,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         try {
             startActivity(i);
+            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
         } catch (ActivityNotFoundException e) {
             Toast.makeText(this, R.string.not_available, Toast.LENGTH_SHORT).show();
         }
     }
+
 
     /** Switches to a passthrough input (HDMI, AV). The standard way is ACTION_VIEW on its channel URI,
      *  which the Live TV app handles; where nothing takes that, the configured `input_action` is sent
@@ -749,13 +1297,22 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         Uri uri = TvContract.buildChannelUriForPassthroughInput(inputId);
         Intent view = new Intent(Intent.ACTION_VIEW).setDataAndType(uri, "vnd.android.cursor.item/channel")
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        if (liveTvPkg != null && !liveTvPkg.isEmpty()) {
+            view.setPackage(liveTvPkg);
+        }
         try {
             startActivity(view);
             return;
         } catch (ActivityNotFoundException e) {
-            if (inputAction.isEmpty()) {
-                Toast.makeText(this, R.string.not_available, Toast.LENGTH_SHORT).show();
+            view.setPackage(null);
+            try {
+                startActivity(view);
                 return;
+            } catch (ActivityNotFoundException ex) {
+                if (inputAction.isEmpty()) {
+                    Toast.makeText(this, R.string.not_available, Toast.LENGTH_SHORT).show();
+                    return;
+                }
             }
         }
         open(new Intent(inputAction).setDataAndType(uri, "vnd.android.cursor.item/channel"));
@@ -879,15 +1436,34 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     private void addInputRow(LinearLayout rows, PopupWindow popup, int iconRes, String title, int state, Runnable action) {
         View row = getLayoutInflater().inflate(R.layout.item_input, rows, false);
-        ((ImageView) row.findViewById(R.id.icon)).setImageResource(iconRes);
-        ((TextView) row.findViewById(R.id.title)).setText(title);
+        ImageView iconView = row.findViewById(R.id.icon);
+        TextView titleView = row.findViewById(R.id.title);
         TextView status = row.findViewById(R.id.status);
         View dot = row.findViewById(R.id.dot);
-        // This TV reports "standby" for every port whether or not something is plugged in, so only
-        // definite states are shown.
+
+        // Intelligent peripheral identification (PS5, Xbox, Switch, Apple TV)
+        String upper = title.toUpperCase(Locale.ROOT);
+        if (upper.contains("PS5") || upper.contains("PLAYSTATION")) {
+            title = title + " · PlayStation";
+        } else if (upper.contains("XBOX")) {
+            title = title + " · Xbox";
+        } else if (upper.contains("SWITCH")) {
+            title = title + " · Switch";
+        } else if (upper.contains("APPLE TV")) {
+            title = title + " · Apple TV";
+        }
+
+        iconView.setImageResource(iconRes);
+        titleView.setText(title);
+
         if (state == TvInputManager.INPUT_STATE_CONNECTED) {
             status.setText(R.string.connected);
             dot.setVisibility(View.VISIBLE);
+            dot.setBackgroundTintList(ColorStateList.valueOf(0xFF00E676));
+        } else if (state == TvInputManager.INPUT_STATE_CONNECTED_STANDBY) {
+            status.setText(R.string.standby);
+            dot.setVisibility(View.VISIBLE);
+            dot.setBackgroundTintList(ColorStateList.valueOf(0xFFFFB300));
         } else if (state == TvInputManager.INPUT_STATE_DISCONNECTED) {
             status.setText(R.string.not_connected);
             dot.setVisibility(View.GONE);
