@@ -360,8 +360,13 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             return;
         }
-        if (e.component != null && ctx instanceof MainActivity) {
-            ((MainActivity) ctx).onAppLaunched(e.component.getPackageName());
+        if (e.component != null) {
+            String pkg = e.component.getPackageName();
+            // Free RAM from other streaming apps BEFORE launching
+            ProcessManager.freeMemoryForFocusedApp(ctx, pkg);
+            if (ctx instanceof MainActivity) {
+                ((MainActivity) ctx).onAppLaunched(pkg);
+            }
         }
         Intent i = new Intent(Intent.ACTION_MAIN)
                 .addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER)
@@ -370,6 +375,16 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         try {
             ctx.startActivity(i);
         } catch (Exception ex) {
+            try {
+                if (e.component != null) {
+                    Intent fallback = ctx.getPackageManager().getLaunchIntentForPackage(e.component.getPackageName());
+                    if (fallback != null) {
+                        fallback.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        ctx.startActivity(fallback);
+                        return;
+                    }
+                }
+            } catch (Exception ignored) {}
             Toast.makeText(ctx, ctx.getString(R.string.cant_open, e.label), Toast.LENGTH_SHORT).show();
         }
     }

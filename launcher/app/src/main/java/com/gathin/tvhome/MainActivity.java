@@ -139,25 +139,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     };
 
     private void killExitedStreamingApps(ActivityManager am) {
-        String[] streamingTargets = {
-            "in.startv.hotstar",
-            "com.google.android.youtube.tv",
-            "com.netflix.ninja",
-            "com.amazon.amazonvideo.livingroom",
-            "com.mitv.tvhome.mitvplus",
-            "com.mitv.livetv"
-        };
-        boolean cleaned = false;
-        for (String pkg : streamingTargets) {
-            if (!pkg.equals(currentlyRunningPkg) && !PROTECTED_PACKAGES.contains(pkg)) {
-                am.killBackgroundProcesses(pkg);
-                cleaned = true;
-            }
-        }
-        if (cleaned) {
-            System.gc();
-            Runtime.getRuntime().gc();
-        }
+        ProcessManager.freeMemoryForFocusedApp(this, currentlyRunningPkg);
+        System.gc();
+        Runtime.getRuntime().gc();
     }
     private android.widget.TextClock clock;
     private android.widget.TextClock ampm;
