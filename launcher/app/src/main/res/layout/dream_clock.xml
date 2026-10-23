@@ -5,6 +5,14 @@
     android:layout_height="match_parent"
     android:background="#FF000000">
 
+    <ImageView
+        android:id="@+id/dreamWallpaper"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:alpha="0.45"
+        android:importantForAccessibility="no" />
+
     <View
         android:id="@+id/dreamAmbient"
         android:layout_width="match_parent"

@@ -695,7 +695,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         screensaverHud = findViewById(R.id.screensaverHud);
         ssWallpaperLabel = findViewById(R.id.ssWallpaperLabel);
         if (ssWallpaperLabel != null) {
-            ssWallpaperLabel.setText("JOHANNES PLENIO · MISTY REDWOOD PATH");
+            ssWallpaperLabel.setText("KARSTEN WÜRTH · MOUNTAIN STREAM");
         }
         ssClock = findViewById(R.id.ssClock);
         ssAmPm = findViewById(R.id.ssAmPm);
@@ -705,9 +705,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         ssWeatherDesc = findViewById(R.id.ssWeatherDesc);
         ssForecastSummary = findViewById(R.id.ssForecastSummary);
 
-        // Ensure permanent wallpaper is bound
+        // Ensure permanent wallpaper is loaded dynamically from TV storage
         if (wallpaper != null) {
-            wallpaper.setImageResource(R.drawable.wallpaper_permanent);
+            WallpaperHelper.loadPermanentWallpaper(this, wallpaper);
         }
     }
 

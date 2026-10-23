@@ -46,6 +46,10 @@ public class ClockDream extends DreamService {
         setContentView(R.layout.dream_clock);
 
         content = findViewById(R.id.dreamContent);
+        android.widget.ImageView dreamWallpaper = findViewById(R.id.dreamWallpaper);
+        if (dreamWallpaper != null) {
+            WallpaperHelper.loadPermanentWallpaper(this, dreamWallpaper);
+        }
         View ambient = findViewById(R.id.dreamAmbient);
         glow = new GradientDrawable();
         glow.setGradientType(GradientDrawable.RADIAL_GRADIENT);

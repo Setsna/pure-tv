@@ -8,12 +8,11 @@
     android:clipChildren="false"
     android:clipToPadding="false">
 
-    <!-- SINGLE PERMANENT WALLPAPER LAYER (Misty Forest Path by Johannes Plenio) -->
+    <!-- SINGLE PERMANENT WALLPAPER LAYER (Loaded dynamically from TV storage) -->
     <ImageView
         android:id="@+id/wallpaper"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:src="@drawable/wallpaper_permanent"
         android:scaleType="centerCrop"
         android:importantForAccessibility="no" />
 
@@ -377,7 +376,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="6dp"
-                android:text="JOHANNES PLENIO · MISTY REDWOOD PATH"
+                android:text="KARSTEN WÜRTH · MOUNTAIN STREAM"
                 android:textColor="#C9AE7D"
                 android:textSize="10.5sp"
                 android:fontFamily="@font/outfit"
