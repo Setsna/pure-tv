@@ -180,8 +180,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private ImageView wallpaper;
     private View wallpaperScrim;
     private View homeContent, screensaverOverlay, screensaverHud;
-    private TextView ssWallpaperLabel, ssWeatherIcon, ssWeatherTemp, ssWeatherDesc, ssForecastSummary;
-    private android.widget.TextClock ssClock, ssAmPm, ssDate;
+    private ScreensaverDashboard dashboard;
     private View topButtons;
     private View launcherContent;
     private boolean inScreensaver = false;
@@ -737,17 +736,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         homeContent = findViewById(R.id.homeContent);
         screensaverOverlay = findViewById(R.id.screensaverOverlay);
         screensaverHud = findViewById(R.id.screensaverHud);
-        ssWallpaperLabel = findViewById(R.id.ssWallpaperLabel);
-        if (ssWallpaperLabel != null) {
-            ssWallpaperLabel.setText("KARSTEN WÜRTH · MOUNTAIN STREAM");
-        }
-        ssClock = findViewById(R.id.ssClock);
-        ssAmPm = findViewById(R.id.ssAmPm);
-        ssDate = findViewById(R.id.ssDate);
-        ssWeatherIcon = findViewById(R.id.ssWeatherIcon);
-        ssWeatherTemp = findViewById(R.id.ssWeatherTemp);
-        ssWeatherDesc = findViewById(R.id.ssWeatherDesc);
-        ssForecastSummary = findViewById(R.id.ssForecastSummary);
+        dashboard = new ScreensaverDashboard(this);
 
         // Ensure permanent wallpaper is loaded dynamically from TV storage
         if (wallpaper != null) {
@@ -769,10 +758,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             screensaverOverlay.setFocusable(true);
             screensaverOverlay.setOnClickListener(v -> exitScreensaver());
             screensaverOverlay.setVisibility(View.VISIBLE);
-            // Default HUD position: bottom start with generous margins
-            FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) screensaverHud.getLayoutParams();
-            lp.gravity = Gravity.BOTTOM | Gravity.START;
-            screensaverHud.setLayoutParams(lp);
+            if (dashboard != null) dashboard.onShow();
 
             screensaverOverlay.animate().alpha(1f).setDuration(800).start();
         }
@@ -781,6 +767,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     private void exitScreensaver() {
         if (!inScreensaver && !isScreensaverActive) return;
+        if (dashboard != null) dashboard.onHide();
         inScreensaver = false;
         isScreensaverActive = false;
         if (screensaverOverlay != null) {
@@ -896,26 +883,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             tvAqiLabel.setText("");
         }
 
-        // Sync with Screensaver HUD
-        if (ssWeatherIcon != null) {
-            ssWeatherIcon.setText(data.getWeatherIcon());
-        }
-        if (ssWeatherTemp != null) {
-            ssWeatherTemp.setText(Math.round(data.currentTempC) + "°C");
-        }
-        if (ssWeatherDesc != null) {
-            ssWeatherDesc.setText(conditionLabel(data.currentWeatherCode));
-        }
-        if (ssForecastSummary != null && data.daily != null && data.daily.length > 0) {
-            ssForecastSummary.setText("High " + Math.round(data.daily[0].maxC) + "° · Low " + Math.round(data.daily[0].minC) + "°");
-        }
+        if (dashboard != null) dashboard.render(data);
     }
 
     private int iconForWeatherCode(int code) {
         return iconForWeatherCode(code, true);
     }
 
-    private int iconForWeatherCode(int code, boolean day) {
+    static int iconForWeatherCode(int code, boolean day) {
         if (code <= 1) return day ? R.drawable.ic_sunny : R.drawable.ic_moon;
         if (code <= 2) return day ? R.drawable.ic_partly_cloudy : R.drawable.ic_partly_cloudy_night;
         if (code <= 48) return R.drawable.ic_cloudy;
@@ -925,11 +900,15 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     }
 
     private int aqiColor(int aqi) {
-        if (aqi <= 50) return getColor(R.color.aqi_green);
-        if (aqi <= 100) return getColor(R.color.aqi_yellow);
-        if (aqi <= 150) return getColor(R.color.aqi_orange);
-        if (aqi <= 200) return getColor(R.color.aqi_red);
-        return getColor(R.color.aqi_purple);
+        return aqiColor(this, aqi);
+    }
+
+    static int aqiColor(Context ctx, int aqi) {
+        if (aqi <= 50) return ctx.getColor(R.color.aqi_green);
+        if (aqi <= 100) return ctx.getColor(R.color.aqi_yellow);
+        if (aqi <= 150) return ctx.getColor(R.color.aqi_orange);
+        if (aqi <= 200) return ctx.getColor(R.color.aqi_red);
+        return ctx.getColor(R.color.aqi_purple);
     }
 
     private String conditionLabel(int code) {
@@ -1260,23 +1239,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         // Clock, weather and the control pills draw their own looks from XML (text on the photo,
         // frosted pills, weather focus plate), so nothing is painted over them here.
 
-        // Screensaver HUD: Plain, simple, premium dark obsidian glass
-        if (screensaverHud != null) {
-            android.graphics.drawable.GradientDrawable sg = new android.graphics.drawable.GradientDrawable();
-            sg.setColor(glassCard);
-            sg.setCornerRadius(radiusCard);
-            sg.setStroke((int) Math.max(1, 1 * density), glassBorder);
-            screensaverHud.setBackground(sg);
-        }
-        if (ssWallpaperLabel != null) {
-            ssWallpaperLabel.setVisibility(View.GONE); // No clutter / photo titles
-        }
-        if (ssClock != null) ssClock.setTextColor(primaryText);
-        if (ssAmPm != null) ssAmPm.setTextColor(warmAccent);
-        if (ssDate != null) ssDate.setTextColor(secondaryText);
-        if (ssWeatherTemp != null) ssWeatherTemp.setTextColor(primaryText);
-        if (ssWeatherDesc != null) ssWeatherDesc.setTextColor(secondaryText);
-        if (ssForecastSummary != null) ssForecastSummary.setTextColor(tertiaryText);
     }
 
     /** Shows the Wi-Fi network name on the button when we can read it, otherwise the connection type. */
