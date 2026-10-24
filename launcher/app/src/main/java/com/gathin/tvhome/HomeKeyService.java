@@ -251,11 +251,18 @@ public class HomeKeyService extends AccessibilityService {
 
     private void launchLiveTv() {
         Intent i = new Intent(Intent.ACTION_MAIN)
-                .setComponent(new ComponentName("com.mitv.livetv", "com.mitv.livetv.tv.MainActivity"))
+                .setComponent(new ComponentName("com.mitv.tvhome.mitvplus", "com.mitv.tvhome.mitvplus.app.BannerLogoFree"))
                 .addFlags(LAUNCH_FLAGS);
         try {
             startActivity(i);
-            freeMemoryAsync("com.mitv.livetv");
+            freeMemoryAsync("com.mitv.tvhome.mitvplus");
+            return;
+        } catch (Exception ignored) {
+        }
+        try {
+            startActivity(new Intent(Intent.ACTION_MAIN)
+                    .setComponent(new ComponentName("com.mitv.livetv", "com.mitv.livetv.tv.MainActivity"))
+                    .addFlags(LAUNCH_FLAGS));
             return;
         } catch (Exception ignored) {
         }

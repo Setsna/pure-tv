@@ -35,7 +35,7 @@ public class AppDiscoveryTest {
     @Test
     public void curatedPackages_preservesExactPriorityOrder() {
         String[] expectedOrder = {
-            "com.mitv.livetv",
+            "com.mitv.tvhome.mitvplus",
             "in.startv.hotstar",
             "com.google.android.youtube.tv",
             "com.spotify.tv.android"

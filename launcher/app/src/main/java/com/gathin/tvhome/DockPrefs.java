@@ -9,7 +9,7 @@ public class DockPrefs {
     private static final String PREFS_NAME = "dock_prefs";
     private static final String KEY_PREFIX = "dock_slot_";
     private static final String KEY_DOCK_VERSION = "dock_version";
-    private static final int CURRENT_DOCK_VERSION = 2; // Phase 2.5 ordered priority
+    private static final int CURRENT_DOCK_VERSION = 3; // Phase 3: Xiaomi TV+ in dock, Airtel Dish TV in header pill
     public static final int SLOT_COUNT = 8;
 
     public static List<String> loadDock(Context ctx) {
@@ -29,6 +29,9 @@ public class DockPrefs {
         for (int i = 0; i < SLOT_COUNT; i++) {
             String pkg = prefs.getString(KEY_PREFIX + i, null);
             if (pkg != null && !pkg.isEmpty()) {
+                if ("com.mitv.livetv".equals(pkg)) {
+                    pkg = "com.mitv.tvhome.mitvplus";
+                }
                 dock.add(pkg);
             }
         }

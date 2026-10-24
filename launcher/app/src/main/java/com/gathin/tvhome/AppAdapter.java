@@ -171,10 +171,15 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
             Drawable banner = ri.activityInfo.loadBanner(pm);
             if (banner == null) banner = ri.activityInfo.applicationInfo.loadBanner(pm);
             Drawable icon = ri.loadIcon(pm);
+            String label = String.valueOf(ri.loadLabel(pm));
+            if ("com.mitv.tvhome.mitvplus".equals(pkg)) {
+                label = "Xiaomi TV+";
+                component = new ComponentName("com.mitv.tvhome.mitvplus", "com.mitv.tvhome.mitvplus.app.BannerLogoFree");
+            }
             if (card != null) {
                 fresh.add(new Entry(Entry.CARD, card.label, component, banner, icon, card.caption, card.accent));
             } else {
-                fresh.add(new Entry(String.valueOf(ri.loadLabel(pm)), component, banner, icon));
+                fresh.add(new Entry(label, component, banner, icon));
             }
         }
 
@@ -362,6 +367,16 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         }
         if (e.component != null) {
             String pkg = e.component.getPackageName();
+            if ("com.mitv.tvhome.mitvplus".equals(pkg)) {
+                try {
+                    Intent plusIntent = new Intent(Intent.ACTION_MAIN)
+                            .setComponent(new ComponentName("com.mitv.tvhome.mitvplus", "com.mitv.tvhome.mitvplus.app.BannerLogoFree"))
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                    ctx.startActivity(plusIntent);
+                    return;
+                } catch (Exception ignored) {
+                }
+            }
             // Free RAM from other streaming apps BEFORE launching
             ProcessManager.freeMemoryForFocusedApp(ctx, pkg);
             if (ctx instanceof MainActivity) {

@@ -19,7 +19,7 @@ public class AppDiscovery {
 
     // Replace the HashSet with an ordered LinkedHashSet — order here IS dock priority
     public static final Set<String> CURATED_PACKAGES = new LinkedHashSet<>(Arrays.asList(
-        "com.mitv.livetv",                   // 1. Xiaomi Live TV
+        "com.mitv.tvhome.mitvplus",          // 1. Xiaomi TV+ (Free Live Channels)
         "in.startv.hotstar",                 // 2. JioHotstar
         "com.google.android.youtube.tv",     // 3. YouTube
         "com.spotify.tv.android",            // 4. Spotify

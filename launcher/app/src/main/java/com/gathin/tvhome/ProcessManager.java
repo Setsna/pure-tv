@@ -20,6 +20,10 @@ public class ProcessManager {
             if (pkg == null) continue;
             if (pkg.equals(launchingPackage)) continue; // never kill the app you're opening
             if (pkg.equals(ctx.getPackageName())) continue; // never kill self
+            // Protect TV tuner and hardware video services so Airtel channel playback is never disturbed
+            if (pkg.equals("com.mitv.livetv") || pkg.equals("mitv.service") || pkg.startsWith("com.mediatek.wwtv")) {
+                continue;
+            }
 
             try {
                 // killBackgroundProcesses only affects cached/background processes —

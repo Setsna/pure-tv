@@ -179,7 +179,7 @@
                         <TextView
                             android:id="@+id/btnLiveTv"
                             style="@style/TopButton"
-                            android:text="Live TV"
+                            android:text="@string/airtel_dish_tv"
                             android:drawableStart="@drawable/ic_livetv"
                             android:nextFocusLeft="@+id/btnSettings"
                             android:nextFocusRight="@+id/btnInputs"
