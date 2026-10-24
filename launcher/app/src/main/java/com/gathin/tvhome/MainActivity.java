@@ -411,7 +411,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
         initWeatherViews();
         updateDayNightTheme();
-        refreshWeather();
         resetInactivityTimer();
     }
 
@@ -465,7 +464,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 sTestHourOfDay = (h >= 0) ? h : null;
                 updateDayNightTheme();
             }
-            refreshWeather();
+            if (!isScreensaverActive) refreshWeather();
         }
     }
 
@@ -507,7 +506,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         updateInputsButton();
         updateDayNightTheme();
         handler.postDelayed(minuteTick, MINUTE_MS);
-        if (SystemClock.elapsedRealtime() - lastWeatherRequestMs > WEATHER_REFRESH_MS) refreshWeather();
+        // Weather is checked every time Home opens, and only then: never while an app is in front,
+        // never on a timer, never while the screensaver shows (leaving it with a key checks again).
+        if (!isScreensaverActive) refreshWeather();
         if (!isScreensaverActive) {
             resetInactivityTimer();
         }
@@ -518,9 +519,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private boolean dockAnimated = false;
     /** DockPrefs revision the tiles were built from; a dock edit bumps it. */
     private int loadedDockRevision = -1;
-    private long lastWeatherRequestMs = -WEATHER_REFRESH_MS;
-    /** Weather and location are refetched at most this often when returning home. */
-    private static final long WEATHER_REFRESH_MS = 15 * MINUTE_MS;
+    private long lastWeatherRequestMs = -WEATHER_DEBOUNCE_MS;
+    /** One check per opening: onNewIntent and onResume can both fire for the same Home press. */
+    private static final long WEATHER_DEBOUNCE_MS = 5_000L;
 
     /** True when any app was installed, removed or updated since the dock was last built. */
     private boolean packagesChangedSinceLastLoad() {
@@ -777,7 +778,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
             screensaverOverlay.animate().alpha(1f).setDuration(800).start();
         }
-        refreshWeather();
+        // No weather check here: the screensaver shows the last known weather.
     }
 
     private void exitScreensaver() {
@@ -796,6 +797,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
         restoreFocus();
         resetInactivityTimer();
+        refreshWeather(); // a key press woke Home up: check the weather now
     }
 
     private void showScreensaver(boolean show) {
@@ -933,12 +935,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     }
 
     private void refreshWeather() {
+        if (SystemClock.elapsedRealtime() - lastWeatherRequestMs < WEATHER_DEBOUNCE_MS) return;
         lastWeatherRequestMs = SystemClock.elapsedRealtime();
         LocationHelper.detectLocation(this, new LocationHelper.LocationCallback() {
             @Override
             public void onLocation(double lat, double lon) {
                 if (isFinishing() || isDestroyed()) return;
-                new WeatherHelper(MainActivity.this).fetchWeather(lat, lon, new WeatherHelper.WeatherCallback() {
+                new WeatherHelper(MainActivity.this).fetchWeather(lat, lon, true, new WeatherHelper.WeatherCallback() {
                     @Override
                     public void onResult(WeatherHelper.WeatherData data) {
                         if (isFinishing() || isDestroyed()) return;

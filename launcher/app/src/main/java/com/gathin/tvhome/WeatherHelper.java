@@ -205,6 +205,14 @@ public class WeatherHelper {
     }
 
     public void fetchWeather(double lat, double lon, WeatherCallback cb) {
+        fetchWeather(lat, lon, false, cb);
+    }
+
+    /**
+     * @param alwaysRefresh go to the network even when the cache is fresh (Home checks on every
+     *                      opening); the cached forecast is still shown first so the widget is never blank
+     */
+    public void fetchWeather(double lat, double lon, boolean alwaysRefresh, WeatherCallback cb) {
         SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         String locationKey = String.format(Locale.US, "%.3f,%.3f", lat, lon);
         boolean sameLocation = locationKey.equals(prefs.getString(KEY_LOCATION, null));
@@ -212,7 +220,7 @@ public class WeatherHelper {
         String cachedPayload = sameLocation ? prefs.getString(KEY_PAYLOAD, null) : null;
 
         // 1. Fresh cache for this location: no network at all
-        if (cachedPayload != null && (System.currentTimeMillis() - cachedAt) < CACHE_TTL_MS) {
+        if (!alwaysRefresh && cachedPayload != null && (System.currentTimeMillis() - cachedAt) < CACHE_TTL_MS) {
             try {
                 cb.onResult(WeatherData.fromJson(new JSONObject(cachedPayload)));
                 return;
