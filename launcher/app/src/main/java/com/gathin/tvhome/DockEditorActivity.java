@@ -111,12 +111,14 @@ public class DockEditorActivity extends Activity {
         });
     }
 
-    /** Every launchable TV app, one per package, alphabetical, without this launcher itself. */
+    /** Every enabled TV app, one per package, alphabetical, without this launcher itself. */
     private List<App> installedApps() {
         PackageManager pm = getPackageManager();
         Map<String, App> byPkg = new LinkedHashMap<>();
         for (ResolveInfo ri : AppDiscovery.getLeanbackApps(this)) {
             if (ri.activityInfo == null) continue;
+            // Apps switched off (debloated, or by the viewer in Settings) can't be launched: don't offer them.
+            if (!ri.activityInfo.applicationInfo.enabled || !ri.activityInfo.enabled) continue;
             String pkg = ri.activityInfo.packageName;
             if (byPkg.containsKey(pkg)) continue;
             String label = "com.mitv.tvhome.mitvplus".equals(pkg) ? "Xiaomi TV+" : String.valueOf(ri.loadLabel(pm));
