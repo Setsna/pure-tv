@@ -35,47 +35,76 @@
   <img src="docs/puretv/dock-editor.jpg" alt="Choosing an app for a dock slot" width="420">
 </p>
 
-## Before you start
-
-You need a computer (Mac, Windows or Linux) on the same Wi-Fi as the TV, and five minutes.
-
-On the TV:
-
-1. **Settings → Device Preferences → About**, select **Build** seven times until it says you are a developer.
-2. Go back to **Device Preferences → Developer options** and turn on **USB debugging** (and **Network debugging**, if your TV shows it).
-3. Note the TV's IP address from **Settings → Network & Internet** (it looks like `192.168.1.25`).
-
-Keep the TV on. The first time the installer connects, the TV asks **"Allow USB debugging?"**: tick **Always allow** and press **OK**.
-
 ## Install
 
-### Option 1: let an AI assistant do it
+Works on Xiaomi, TCL, Hisense, Sony, OnePlus, Realme and most other TVs running **Android TV or Google TV** (Android 8 or later). It does **not** work on Samsung (Tizen), LG (webOS) or Fire TV.
 
-Open [Claude Code](https://claude.com/claude-code) (or another coding assistant that can run commands) and paste the prompt from [PROMPT.md](PROMPT.md). It finds your TV, runs the installer, and checks the result with screenshots from the TV.
+You need the TV, a computer (Mac, Windows or Linux) on the **same Wi-Fi**, and about 10 minutes. Nothing is deleted from your TV, and every change can be undone.
 
-### Option 2: one command
+### Step 1 · Turn on developer mode on the TV
 
-**macOS / Linux** (Terminal):
+Open the TV's **Settings** and find the build number:
+
+- **Xiaomi and other Google TV sets:** Settings → **System** → **About** → **Android TV OS build**
+- **Older Android TV sets:** Settings → **Device Preferences** → **About** → **Build**
+
+Select it **7 times** with the OK button until the TV says *"You are now a developer"*.
+
+### Step 2 · Turn on USB debugging
+
+Go back to Settings → **System** (or **Device Preferences**) → **Developer options** and switch on:
+
+- **USB debugging**
+- **Network debugging** or **ADB over network**, if your TV shows it
+
+### Step 3 · Note the TV's IP address
+
+Settings → **Network & Internet** → select your Wi-Fi network. Write down the **IP address**, for example `192.168.1.25`.
+
+### Step 4 · Install Python on the computer (one time)
+
+Download it from [python.org/downloads](https://www.python.org/downloads/) and install it. On Windows, tick **"Add python.exe to PATH"** during setup. Macs with Homebrew can run `brew install python` instead.
+
+### Step 5 · Run one command
+
+Replace `192.168.1.25` with your TV's address.
+
+**Mac or Linux:** open **Terminal** and paste:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Vardxn/pure-tv/main/install.sh | bash -s -- 192.168.1.25
 ```
 
-**Windows** (PowerShell):
+**Windows:** open **PowerShell** and paste:
 
 ```powershell
 irm https://raw.githubusercontent.com/Vardxn/pure-tv/main/install.ps1 -OutFile install.ps1; .\install.ps1 192.168.1.25
 ```
 
-Replace `192.168.1.25` with your TV's address. You need [Python 3](https://www.python.org/downloads/); the installer sets up everything else in a private folder (`~/.puretv`) and does not touch your system.
+If Windows says scripts are disabled, run this first, then try again: `Set-ExecutionPolicy -Scope Process Bypass`
 
-The installer:
+### Step 6 · Allow the connection on the TV
 
-1. Saves a backup of the TV's apps and settings to `~/PureTV-backups/`.
-2. Downloads the latest Pure TV release, installs it, and makes it your home screen.
-3. Asks before each optional extra below. Say no to any of them; you can run it again later.
+The TV shows **"Allow USB debugging?"**. Tick **Always allow from this computer** and press **OK**.
 
-You can also clone the repo and run `./install.sh <tv-ip>` (or `.\install.ps1 <tv-ip>`).
+### Step 7 · Answer the questions
+
+The installer backs up your TV, installs Pure TV and makes it your home screen. It then asks about a few optional extras. Our suggestions:
+
+| Question | Suggested answer |
+|---|---|
+| Remote's Home button opens Pure TV (Xiaomi) | **Yes** |
+| Debloat (only asked if your TV model has a tested list) | **Yes** |
+| AdGuard DNS | **Your choice.** Read the table below first |
+| SmartTube, YouTube without ads | **Yes**, if you watch a lot of YouTube |
+
+### Step 8 · Enjoy, then lock the TV again
+
+Press **Home** on the remote. Then go back to **Developer options** and switch **USB debugging** off, so no other device on your Wi-Fi can connect to the TV.
+
+**Prefer to have AI do it?** Open [Claude Code](https://claude.com/claude-code) (or another coding assistant that can run commands), paste the prompt from [PROMPT.md](PROMPT.md), and it will do steps 5 to 7 with you.
+
+**Something not working?** The installer explains what to check. If it still fails, [open an issue](https://github.com/Vardxn/pure-tv/issues) with your TV model and the message you saw.
 
 ### Optional extras, and what they can and can't do
 
