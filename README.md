@@ -170,6 +170,8 @@ Pure TV is free and open source, and I build and test it in my spare time. If it
 
 **[buymeacoffee.com/Vardxn](https://www.buymeacoffee.com/Vardxn)**
 
+In India, you can also pay by UPI: **`8279696707@yescred`** (any UPI app: Google Pay, PhonePe, Paytm, BHIM).
+
 Not in a position to give? A ⭐ on this repo, a bug report, or trying Pure TV on a new TV model and [telling me how it went](https://github.com/Vardxn/pure-tv/issues) helps just as much.
 
 And please consider supporting [cleanyourtv](https://github.com/Gathin23/cleanyourtv) too: Pure TV wouldn't exist without it.
