@@ -31,3 +31,26 @@ GEMINI.md
 PROJECT_COMPREHENSIVE_AUDIT_REPORT.md
 skills-lock.json
 ui-audit/
+
+# Personal working files kept locally, not part of the public Pure TV repo
+FINAL_PROJECT_AUDIT_REPORT.md
+PROJECT_COMPREHENSIVE_AUDIT_REPORT.md
+RELEASE_NOTES.md
+GEMINI.md
+skills-lock.json
+.agents/
+debloat-custom.txt
+ui-audit/
+scratch/
+backups/
+backup-moor2/
+wallpapers/
+/*.png
+tools/backup_and_debloat.sh
+tools/deploy_apple_tv_clean.sh
+tools/install_mivibe.*
+tools/push_final_to_tv.sh
+tools/restore_stock_tv.sh
+tools/setup_adblock.sh
+tools/setup_one_year_tv.sh
+tools/tv_tune.sh

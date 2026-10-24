@@ -222,6 +222,9 @@ def cmd_install(args):
     tv.install(apk)
     state["installed"].append(PKG)
     save_state(state)
+    # Compile ahead of time: the launcher starts and scrolls at full speed from the first run.
+    say("Optimising for speed...")
+    tv.sh(f"cmd package compile -m speed -f {PKG}", 300.0)
 
     # 3. Make it the home screen
     say("Making Pure TV the home screen...")
