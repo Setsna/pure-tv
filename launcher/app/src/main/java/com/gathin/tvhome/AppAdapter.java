@@ -4,6 +4,7 @@ import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
@@ -207,32 +208,63 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         notifyDataSetChanged();
     }
 
-    private int getCuratedTileRes(String pkg) {
-        if ("in.startv.hotstar".equals(pkg)) {
-            return R.drawable.tile_hotstar;
-        } else if ("com.google.android.youtube.tv".equals(pkg)) {
-            return R.drawable.tile_youtube;
-        } else if ("com.spotify.tv.android".equals(pkg)) {
-            return R.drawable.tile_spotify;
-        } else if ("com.netflix.ninja".equals(pkg) || "com.netflix.mediaclient".equals(pkg)) {
-            return R.drawable.tile_netflix;
-        } else if ("com.amazon.amazonvideo.livingroom".equals(pkg)) {
-            return R.drawable.tile_prime;
-        } else if ("com.mitv.tvhome.mitvplus".equals(pkg)) {
-            return R.drawable.tile_mitvplus;
-        } else if ("com.xiaomi.mitv.smartshare".equals(pkg)) {
-            return R.drawable.tile_smartshare;
-        } else if ("com.xiaomi.mitv.mediaexplorer".equals(pkg)) {
-            return R.drawable.tile_mediaexplorer;
-        }
-        return -1;
-    }
+    private final Map<String, Drawable> artCache = new HashMap<>();
 
-    private int getTileResource(String packageName) {
-        if (AppDiscovery.CURATED_PACKAGES.contains(packageName)) {
-            return getCuratedTileRes(packageName);
+    private void bindTile(@NonNull Holder h, @NonNull Entry e) {
+        String pkg = e.pkg;
+        Drawable art = (pkg != null) ? artCache.get(pkg) : null;
+        CharSequence label = e.label;
+
+        if (art == null && pkg != null) {
+            try {
+                PackageManager pm = ctx.getPackageManager();
+                ApplicationInfo ai = pm.getApplicationInfo(pkg, 0);
+                if (label == null || label.length() == 0) {
+                    label = ai.loadLabel(pm);
+                }
+                art = ai.loadBanner(pm); // 16:9 TV artwork, preferred
+                if (art == null && e.banner != null) {
+                    art = e.banner;
+                }
+                if (art == null) {
+                    art = ai.loadIcon(pm); // fallback: square app icon
+                    if (art == null && e.icon != null) {
+                        art = e.icon;
+                    }
+                }
+                if (art != null) {
+                    art.setBounds(0, 0, art.getIntrinsicWidth(), art.getIntrinsicHeight());
+                    artCache.put(pkg, art);
+                }
+            } catch (PackageManager.NameNotFoundException ignored) {
+                if (e.banner != null) art = e.banner;
+                else if (e.icon != null) art = e.icon;
+            }
+        } else if (art == null) {
+            if (e.banner != null) art = e.banner;
+            else if (e.icon != null) art = e.icon;
         }
-        return -1;
+
+        if ("com.mitv.tvhome.mitvplus".equals(pkg)) {
+            label = "Xiaomi TV+";
+        }
+
+        boolean hasBanner = (art != null && art.getIntrinsicWidth() > art.getIntrinsicHeight() * 1.3f);
+        if (hasBanner) {
+            h.banner.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            h.banner.setPadding(0, 0, 0, 0);
+            h.label.setVisibility(View.GONE);
+        } else {
+            h.banner.setScaleType(ImageView.ScaleType.FIT_CENTER);
+            float d = h.itemView.getResources().getDisplayMetrics().density;
+            int padH = Math.round(36 * d);
+            int padT = Math.round(20 * d);
+            int padB = Math.round(36 * d);
+            h.banner.setPadding(padH, padT, padH, padB);
+            h.label.setText(label);
+            h.label.setVisibility(View.VISIBLE);
+        }
+        h.banner.setImageDrawable(art);
     }
 
     private int cachedCellWidth = 0;
@@ -265,10 +297,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
     @Override
     public void onBindViewHolder(@NonNull Holder h, int position) {
         Entry e = items.get(position);
-        int curatedRes = getTileResource(e.pkg);
-        boolean hasBanner = (curatedRes != -1 || e.banner != null);
-        h.name.setVisibility(hasBanner ? View.GONE : (position < dockSize ? View.INVISIBLE : View.VISIBLE));
-        boolean focused = h.card.isFocused();   // a rebind after reload() can hit the focused tile
+        boolean focused = h.card.isFocused();
         h.name.setAlpha(focused ? 1f : 0f);
         h.card.setAlpha(focused ? 1.0f : 0.82f);
 
@@ -286,34 +315,8 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
             h.itemView.setTranslationX(0f);
         }
 
-        if (curatedRes != -1) {
-            h.banner.setImageResource(curatedRes);
-            h.banner.setBackground(null);
-            h.banner.setScaleType(ImageView.ScaleType.CENTER_CROP);
-            h.banner.setPadding(0, 0, 0, 0);
-            h.banner.setVisibility(View.VISIBLE);
-            h.icon.setVisibility(View.GONE);
-            h.label.setVisibility(View.GONE);
-        } else if (e.banner != null) {
-            h.banner.setImageDrawable(e.banner);
-            h.banner.setBackground(null);
-            h.banner.setScaleType(ImageView.ScaleType.CENTER_CROP);
-            h.banner.setPadding(0, 0, 0, 0);
-            h.banner.setVisibility(View.VISIBLE);
-            h.icon.setVisibility(View.GONE);
-            h.label.setVisibility(View.GONE);
-        } else {
-            // Dynamic fallback banner on charcoal card with centered app icon
-            h.banner.setImageDrawable(e.icon);
-            h.banner.setBackgroundResource(R.drawable.charcoal_card_bg);
-            h.banner.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-            int pad = Math.round(18 * h.itemView.getResources().getDisplayMetrics().density);
-            h.banner.setPadding(pad, pad, pad, pad + Math.round(14 * h.itemView.getResources().getDisplayMetrics().density));
-            h.banner.setVisibility(View.VISIBLE);
-            h.icon.setVisibility(View.GONE);
-            h.label.setText(e.label);
-            h.label.setVisibility(View.VISIBLE);
-        }
+        bindTile(h, e);
+
         h.card.setOnClickListener(v -> launch(e));
         h.card.setOnLongClickListener(v -> {
             showSlotConfigDialog(position, e);
@@ -490,9 +493,9 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         return Color.HSVToColor(hsv);
     }
 
-    /** Corner radius for a tile of this width: 16dp at the design width, proportionally less when smaller. */
+    /** Corner radius for a tile of this width: 20dp at the design width, proportionally less when smaller. */
     static float cornerRadius(int tileWidthPx, float density) {
-        return 16f * density * Math.min(1f, tileWidthPx / (DESIGN_W_DP * density));
+        return 20f * density * Math.min(1f, tileWidthPx / (DESIGN_W_DP * density));
     }
 
     static final class Holder extends RecyclerView.ViewHolder {
