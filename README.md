@@ -13,7 +13,12 @@
   <a href="https://github.com/Vardxn/pure-tv/releases/latest"><b>Download the latest release</b></a> ·
   <a href="#install">Install</a> ·
   <a href="#undo">Undo</a> ·
-  <a href="#credits">Credits</a>
+  <a href="#credits">Credits</a> ·
+  <a href="#support-my-work">Support</a>
+</p>
+
+<p align="center">
+  <a href="https://www.buymeacoffee.com/Vardxn"><img src="https://img.shields.io/badge/Buy_me_a_coffee-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black" alt="Buy me a coffee"></a>
 </p>
 
 ---
@@ -156,6 +161,18 @@ weather.location=19.0760,72.8777,Mumbai
 Release builds sign with the key configured in `~/.gradle/gradle.properties` (`PURETV_STORE_FILE`, `PURETV_STORE_PASSWORD`, `PURETV_KEY_ALIAS`, `PURETV_KEY_PASSWORD`); without it they use the debug key. Install a build with `./install.sh install <tv-ip> --apk launcher/app/build/outputs/apk/release/app-release.apk`.
 
 Festival dates live in [`festivals.txt`](launcher/app/src/main/res/raw/festivals.txt) and quotes in [`quotes.txt`](launcher/app/src/main/res/raw/quotes.txt); festivals that follow the lunar calendar need next year's dates added each year.
+
+## Support my work
+
+Pure TV is free and open source, and I build and test it in my spare time. If it made your TV, or your evenings, a little better, you can buy me a coffee:
+
+<a href="https://www.buymeacoffee.com/Vardxn"><img src="https://img.shields.io/badge/Buy_me_a_coffee-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black" alt="Buy me a coffee"></a>
+
+**[buymeacoffee.com/Vardxn](https://www.buymeacoffee.com/Vardxn)**
+
+Not in a position to give? A ⭐ on this repo, a bug report, or trying Pure TV on a new TV model and [telling me how it went](https://github.com/Vardxn/pure-tv/issues) helps just as much.
+
+And please consider supporting [cleanyourtv](https://github.com/Gathin23/cleanyourtv) too: Pure TV wouldn't exist without it.
 
 ## Credits
 
