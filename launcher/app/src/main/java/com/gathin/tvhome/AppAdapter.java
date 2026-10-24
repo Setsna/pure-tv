@@ -281,11 +281,17 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
                 PackageManager pm = ctx.getPackageManager();
                 if ("com.mitv.tvhome.mitvplus".equals(pkg)) {
                     label = "Xiaomi TV+";
-                    Intent mitvIntent = new Intent(Intent.ACTION_MAIN)
-                            .setComponent(new ComponentName("com.mitv.tvhome.mitvplus", "com.mitv.tvhome.mitvplus.app.BannerLogoFree"));
-                    ResolveInfo ri = pm.resolveActivity(mitvIntent, PackageManager.MATCH_DISABLED_COMPONENTS);
-                    if (ri != null && ri.activityInfo != null) {
-                        art = ri.activityInfo.loadBanner(pm);
+                    try {
+                        art = ctx.getDrawable(R.drawable.tile_mitvplus);
+                    } catch (Throwable ignored) {
+                    }
+                    if (art == null) {
+                        Intent mitvIntent = new Intent(Intent.ACTION_MAIN)
+                                .setComponent(new ComponentName("com.mitv.tvhome.mitvplus", "com.mitv.tvhome.mitvplus.app.BannerLogoFree"));
+                        ResolveInfo ri = pm.resolveActivity(mitvIntent, PackageManager.MATCH_DISABLED_COMPONENTS);
+                        if (ri != null && ri.activityInfo != null) {
+                            art = ri.activityInfo.loadBanner(pm);
+                        }
                     }
                 }
                 ApplicationInfo ai = pm.getApplicationInfo(pkg, 0);
@@ -516,7 +522,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         if ("com.spotify.tv.android".equals(e.pkg)) return 0xFF1ED760;
         if ("com.netflix.ninja".equals(e.pkg)) return 0xFFE50914;
         if ("com.amazon.amazonvideo.livingroom".equals(e.pkg)) return 0xFF00A8E1;
-        if ("com.mitv.tvhome.mitvplus".equals(e.pkg)) return 0xFFFF6900;
+        if ("com.mitv.tvhome.mitvplus".equals(e.pkg)) return 0xFFE2E8F0;
         if ("com.xiaomi.mitv.smartshare".equals(e.pkg)) return 0xFF0091FF;
         if ("com.xiaomi.mitv.mediaexplorer".equals(e.pkg)) return 0xFFFF9500;
         if (e.ambient == 0) e.ambient = vividColor(e.banner != null ? e.banner : e.icon);
