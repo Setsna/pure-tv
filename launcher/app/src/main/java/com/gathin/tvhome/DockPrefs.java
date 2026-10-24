@@ -8,8 +8,8 @@ import java.util.List;
 public class DockPrefs {
     private static final String PREFS_NAME = "dock_prefs";
     private static final String KEY_PREFIX = "dock_slot_";
-    private static final String KEY_DOCK_VERSION = "dock_version";
-    private static final int CURRENT_DOCK_VERSION = 4; // Phase 4: Enforce sequence Xiaomi TV+, Hotstar, YouTube, Spotify
+    public static final String KEY_SCHEMA = "dock_schema_version";
+    public static final int CURRENT_SCHEMA = 2;
     public static final int SLOT_COUNT = 8;
 
     public static List<String> loadDock(Context ctx) {
@@ -17,12 +17,12 @@ public class DockPrefs {
         List<String> dock = new ArrayList<>();
 
         boolean firstRun = !prefs.contains(KEY_PREFIX + "0")
-                || prefs.getInt(KEY_DOCK_VERSION, 0) < CURRENT_DOCK_VERSION;
+                || prefs.getInt(KEY_SCHEMA, 0) < CURRENT_SCHEMA;
         if (firstRun) {
-            // First launch or priority update: populate with smart defaults and persist immediately
+            // First launch or schema update: populate with smart defaults and persist immediately
             dock = AppDiscovery.getDefaultDockSelection(ctx, SLOT_COUNT);
             saveDock(ctx, dock);
-            prefs.edit().putInt(KEY_DOCK_VERSION, CURRENT_DOCK_VERSION).apply();
+            prefs.edit().putInt(KEY_SCHEMA, CURRENT_SCHEMA).apply();
             return dock;
         }
 

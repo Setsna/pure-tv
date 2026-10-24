@@ -17,18 +17,27 @@ import java.util.Set;
 
 public class AppDiscovery {
 
-    // Replace the HashSet with an ordered LinkedHashSet — order here IS dock priority
-    public static final Set<String> CURATED_PACKAGES = new LinkedHashSet<>(Arrays.asList(
-        "com.mitv.tvhome.mitvplus",          // 1. Xiaomi TV+ (Free Live Channels)
-        "in.startv.hotstar",                 // 2. JioHotstar
-        "com.google.android.youtube.tv",     // 3. YouTube
-        "com.spotify.tv.android",            // 4. Spotify
-        "com.netflix.ninja",                 // 5a. Netflix (Android TV)
-        "com.netflix.mediaclient",           // 5b. Netflix (Mobile/Sideloaded)
-        "com.amazon.amazonvideo.livingroom", // 6. Prime Video
-        "com.jio.jiotvsdk.tv",               // 7. JioTV
-        "org.videolan.vlc"                   // 8. VLC
-    ));
+    public static final String[][] DOCK_PRIORITY = {
+        {"com.mitv.tvhome.mitvplus", "com.mitv.livetv"},
+        {"in.startv.hotstar"},
+        {"com.google.android.youtube.tv"},
+        {"com.spotify.tv.android"},
+        {"com.netflix.ninja", "com.netflix.mediaclient"},
+        {"com.amazon.amazonvideo.livingroom"},
+        {"com.jio.jiotvsdk.tv"},
+        {"org.videolan.vlc"}
+    };
+
+    public static final Set<String> CURATED_PACKAGES;
+    static {
+        Set<String> set = new LinkedHashSet<>();
+        for (String[] candidates : DOCK_PRIORITY) {
+            for (String pkg : candidates) {
+                set.add(pkg);
+            }
+        }
+        CURATED_PACKAGES = Collections.unmodifiableSet(set);
+    }
 
     public static List<ResolveInfo> getLeanbackApps(Context ctx) {
         PackageManager pm = ctx.getPackageManager();
@@ -56,30 +65,43 @@ public class AppDiscovery {
     // Smart default: prioritize curated apps first, then fill remaining slots
     // with whatever else is installed, sorted alphabetically for determinism
     public static List<String> getDefaultDockSelection(Context ctx, int slotCount) {
-        PackageManager pm = ctx.getPackageManager();
-        List<ResolveInfo> installed = getLeanbackApps(ctx);
         Set<String> installedPkgs = new HashSet<>();
-        for (ResolveInfo ri : installed) {
-            if (ri.activityInfo != null) {
-                installedPkgs.add(ri.activityInfo.packageName);
+        if (ctx != null) {
+            PackageManager pm = ctx.getPackageManager();
+            if (pm != null) {
+                List<ResolveInfo> installed = getLeanbackApps(ctx);
+                for (ResolveInfo ri : installed) {
+                    if (ri.activityInfo != null) {
+                        installedPkgs.add(ri.activityInfo.packageName);
+                    }
+                }
+                for (String[] slotCandidates : DOCK_PRIORITY) {
+                    for (String pkg : slotCandidates) {
+                        if (!installedPkgs.contains(pkg)) {
+                            try {
+                                pm.getApplicationInfo(pkg, 0);
+                                installedPkgs.add(pkg);
+                            } catch (PackageManager.NameNotFoundException ignored) {}
+                        }
+                    }
+                }
             }
         }
-        for (String curated : CURATED_PACKAGES) {
-            if (!installedPkgs.contains(curated)) {
-                try {
-                    pm.getApplicationInfo(curated, 0);
-                    installedPkgs.add(curated);
-                } catch (PackageManager.NameNotFoundException ignored) {}
-            }
-        }
+        return getDefaultDockSelection(installedPkgs, slotCount);
+    }
 
+    public static List<String> getDefaultDockSelection(Set<String> installedPkgs, int slotCount) {
         List<String> result = new ArrayList<>();
 
-        // Pass 1: curated apps, in the order declared above
-        for (String pkg : CURATED_PACKAGES) {
-            if (installedPkgs.contains(pkg) && result.size() < slotCount) {
-                if (!result.contains(pkg)) {
-                    result.add(pkg);
+        // Pass 1: priority candidates per slot
+        for (String[] slotCandidates : DOCK_PRIORITY) {
+            if (result.size() >= slotCount) break;
+            for (String pkg : slotCandidates) {
+                if (installedPkgs.contains(pkg)) {
+                    if (!result.contains(pkg)) {
+                        result.add(pkg);
+                        break;
+                    }
                 }
             }
         }

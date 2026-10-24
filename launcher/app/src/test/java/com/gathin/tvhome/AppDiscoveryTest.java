@@ -40,13 +40,46 @@ public class AppDiscoveryTest {
             "com.google.android.youtube.tv",
             "com.spotify.tv.android"
         };
-        int idx = 0;
-        for (String pkg : AppDiscovery.CURATED_PACKAGES) {
-            if (idx < expectedOrder.length) {
-                assertEquals("Slot " + idx + " must match priority order", expectedOrder[idx], pkg);
-                idx++;
+        for (int i = 0; i < expectedOrder.length; i++) {
+            assertEquals("Slot " + i + " must match priority order", expectedOrder[i], AppDiscovery.DOCK_PRIORITY[i][0]);
+        }
+    }
+
+    @Test
+    public void dockPriority_slotZeroIsXiaomiTvPlusAndNetflixPrecedesPrime() {
+        assertEquals("Slot 0 primary candidate must be Xiaomi TV+",
+                "com.mitv.tvhome.mitvplus", AppDiscovery.DOCK_PRIORITY[0][0]);
+
+        int netflixSlot = -1;
+        int primeSlot = -1;
+        for (int i = 0; i < AppDiscovery.DOCK_PRIORITY.length; i++) {
+            for (String pkg : AppDiscovery.DOCK_PRIORITY[i]) {
+                if (pkg.contains("netflix")) netflixSlot = i;
+                if (pkg.contains("amazonvideo")) primeSlot = i;
             }
         }
-        assertEquals("First 4 priority slots must be verified", 4, idx);
+        assertTrue("Netflix must be present in DOCK_PRIORITY", netflixSlot != -1);
+        assertTrue("Prime Video must be present in DOCK_PRIORITY", primeSlot != -1);
+        assertTrue("Netflix (slot " + netflixSlot + ") must precede Prime Video (slot " + primeSlot + ")",
+                netflixSlot < primeSlot);
+    }
+
+    @Test
+    public void getDefaultDockSelection_withMockedInstalledList_skipsMissingAppsAndPreservesOrder() {
+        java.util.Set<String> installed = new java.util.HashSet<>(java.util.Arrays.asList(
+            "com.mitv.tvhome.mitvplus",
+            "com.netflix.ninja",
+            "com.amazon.amazonvideo.livingroom",
+            "com.some.extra.app"
+        ));
+        // Hotstar, YouTube, Spotify are missing from installed list
+
+        java.util.List<String> selection = AppDiscovery.getDefaultDockSelection(installed, 8);
+
+        assertEquals("First slot must be Xiaomi TV+", "com.mitv.tvhome.mitvplus", selection.get(0));
+        assertEquals("Second slot must be Netflix (Hotstar, YT, Spotify skipped)", "com.netflix.ninja", selection.get(1));
+        assertEquals("Third slot must be Prime Video", "com.amazon.amazonvideo.livingroom", selection.get(2));
+        assertTrue("Extra app should be added in Pass 2", selection.contains("com.some.extra.app"));
+        assertFalse("Missing Hotstar must not be in selection", selection.contains("in.startv.hotstar"));
     }
 }

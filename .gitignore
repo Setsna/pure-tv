@@ -24,3 +24,10 @@ release/
 *.keystore
 keystore.properties
 local.properties
+
+# Private agent, tooling & audit notes
+.agents/
+GEMINI.md
+PROJECT_COMPREHENSIVE_AUDIT_REPORT.md
+skills-lock.json
+ui-audit/
