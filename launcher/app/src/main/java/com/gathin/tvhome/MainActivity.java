@@ -820,7 +820,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (data == null || weatherWidget == null) return;
         long now = System.currentTimeMillis();
 
-        weatherWidget.setBackground(weatherSky(data.currentWeatherCode, data.isDay));
         weatherWidget.setVisibility(View.VISIBLE);
 
         String city = LocationHelper.cityName(this);
@@ -910,25 +909,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (code <= 67 || (code >= 80 && code <= 82)) return R.drawable.ic_rain;
         if (code >= 95) return R.drawable.ic_storm;
         return R.drawable.ic_cloudy;
-    }
-
-    /** The widget's sky: a gradient for the conditions and time of day, like Apple's weather widget. */
-    private android.graphics.drawable.Drawable weatherSky(int code, boolean day) {
-        int top, bottom;
-        if (code >= 95) {
-            top = 0xFF2B3040; bottom = 0xFF4A5165;                      // storm
-        } else if (code >= 51) {
-            top = day ? 0xFF4C5E75 : 0xFF263142; bottom = day ? 0xFF6E8196 : 0xFF3C4A5E;   // rain
-        } else if (code >= 3) {
-            top = day ? 0xFF5E7186 : 0xFF2A3341; bottom = day ? 0xFF8696A8 : 0xFF46505F;   // overcast, fog
-        } else {
-            top = day ? 0xFF2F7FD0 : 0xFF0C1631; bottom = day ? 0xFF5FA5E6 : 0xFF283C6E;   // clear, partly cloudy
-        }
-        android.graphics.drawable.GradientDrawable g = new android.graphics.drawable.GradientDrawable(
-                android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM, new int[] {top, bottom});
-        g.setCornerRadius(getResources().getDimension(R.dimen.radius_card));
-        g.setStroke(Math.max(1, Math.round(density)), getColor(R.color.night_glass_border));
-        return g;
     }
 
     private int aqiColor(int aqi) {
