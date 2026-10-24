@@ -34,6 +34,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -132,6 +133,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
      * Rebuilds the tiles using universal dynamic app discovery from DockPrefs and AppDiscovery.
      */
     void reload(List<Cards.Card> cards) {
+        artCache.clear();
         this.favourites.clear();
         this.favourites.addAll(DockPrefs.loadDock(ctx));
 
@@ -139,20 +141,22 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         Intent probe = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER);
         List<ResolveInfo> found = pm.queryIntentActivities(probe, PackageManager.MATCH_DISABLED_COMPONENTS);
 
-        // Also query launch intents for configured dock apps (favourites) in case they declare standard launcher category
-        Set<String> resolvedPkgs = new HashSet<>();
+        Map<String, ResolveInfo> appMap = new LinkedHashMap<>();
         for (ResolveInfo ri : found) {
-            if (ri.activityInfo != null) resolvedPkgs.add(ri.activityInfo.packageName);
+            if (ri.activityInfo != null && !appMap.containsKey(ri.activityInfo.packageName)) {
+                appMap.put(ri.activityInfo.packageName, ri);
+            }
         }
+
+        // Ensure every favourite is resolved
         for (String favPkg : favourites) {
-            if (!resolvedPkgs.contains(favPkg) && !hidden.contains(favPkg)) {
+            if (!appMap.containsKey(favPkg) && !hidden.contains(favPkg)) {
                 if ("com.mitv.tvhome.mitvplus".equals(favPkg)) {
-                    Intent mitvIntent = new Intent(Intent.ACTION_MAIN);
-                    mitvIntent.setComponent(new ComponentName("com.mitv.tvhome.mitvplus", "com.mitv.tvhome.mitvplus.app.BannerLogoFree"));
+                    Intent mitvIntent = new Intent(Intent.ACTION_MAIN)
+                            .setComponent(new ComponentName("com.mitv.tvhome.mitvplus", "com.mitv.tvhome.mitvplus.app.BannerLogoFree"));
                     ResolveInfo ri = pm.resolveActivity(mitvIntent, PackageManager.MATCH_DISABLED_COMPONENTS);
                     if (ri != null && ri.activityInfo != null) {
-                        found.add(ri);
-                        resolvedPkgs.add(favPkg);
+                        appMap.put(favPkg, ri);
                         continue;
                     }
                 }
@@ -161,8 +165,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
                 if (li != null) {
                     ResolveInfo ri = pm.resolveActivity(li, 0);
                     if (ri != null && ri.activityInfo != null) {
-                        found.add(ri);
-                        resolvedPkgs.add(favPkg);
+                        appMap.put(favPkg, ri);
                     }
                 }
             }
@@ -170,15 +173,21 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
 
         Map<String, Cards.Card> cardByPkg = new HashMap<>();
         for (Cards.Card c : cards) cardByPkg.put(c.pkg, c);
+
         List<Entry> fresh = new ArrayList<>();
-        for (ResolveInfo ri : found) {
-            if (ri.activityInfo == null) continue;
+        Set<String> addedPkgs = new HashSet<>();
+
+        // 1. Add configured dock favourites in strict priority order (exactly one tile per app)
+        for (String favPkg : favourites) {
+            if (hidden.contains(favPkg) || addedPkgs.contains(favPkg)) continue;
+            ResolveInfo ri = appMap.get(favPkg);
+            if (ri == null || ri.activityInfo == null) continue;
+
             String pkg = ri.activityInfo.packageName;
-            if (pkg.equals(ctx.getPackageName()) || hidden.contains(pkg)) continue;
-            if (!favourites.isEmpty() && !favourites.contains(pkg)) continue; // STRICT CORE APPS ONLY
             ComponentName component = new ComponentName(pkg, ri.activityInfo.name);
             Cards.Card card = cardByPkg.get(pkg);
-            if (card != null && !card.component.equals(component)) continue;   // the card stands in for this tile
+            if (card != null && !card.component.equals(component)) continue;
+
             Drawable banner = ri.activityInfo.loadBanner(pm);
             if (banner == null) banner = ri.activityInfo.applicationInfo.loadBanner(pm);
             Drawable icon = ri.loadIcon(pm);
@@ -187,25 +196,35 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
                 label = "Xiaomi TV+";
                 component = new ComponentName("com.mitv.tvhome.mitvplus", "com.mitv.tvhome.mitvplus.app.BannerLogoFree");
             }
+
             if (card != null) {
                 fresh.add(new Entry(Entry.CARD, card.label, component, banner, icon, card.caption, card.accent));
             } else {
                 fresh.add(new Entry(label, component, banner, icon));
             }
+            addedPkgs.add(pkg);
         }
 
-        Collections.sort(fresh, (a, b) -> {
-            int fa = favourites.indexOf(a.pkg), fb = favourites.indexOf(b.pkg);
-            if (fa >= 0 || fb >= 0) {
-                if (fa < 0) return 1;
-                if (fb < 0) return -1;
-                return Integer.compare(fa, fb);
+        // 2. Add any other installed apps not in favourites (alphabetical)
+        List<ResolveInfo> remaining = new ArrayList<>();
+        for (Map.Entry<String, ResolveInfo> e : appMap.entrySet()) {
+            if (!addedPkgs.contains(e.getKey()) && !hidden.contains(e.getKey()) && !e.getKey().equals(ctx.getPackageName())) {
+                remaining.add(e.getValue());
             }
-            // Cards come right after the configured dock apps, before the alphabetical grid.
-            boolean ca = a.kind == Entry.CARD, cb = b.kind == Entry.CARD;
-            if (ca != cb) return ca ? -1 : 1;
-            return a.label.compareToIgnoreCase(b.label);
-        });
+        }
+        remaining.sort((a, b) -> String.valueOf(a.loadLabel(pm)).compareToIgnoreCase(String.valueOf(b.loadLabel(pm))));
+        for (ResolveInfo ri : remaining) {
+            String pkg = ri.activityInfo.packageName;
+            if (addedPkgs.contains(pkg)) continue;
+            ComponentName component = new ComponentName(pkg, ri.activityInfo.name);
+            Drawable banner = ri.activityInfo.loadBanner(pm);
+            if (banner == null) banner = ri.activityInfo.applicationInfo.loadBanner(pm);
+            Drawable icon = ri.loadIcon(pm);
+            String label = String.valueOf(ri.loadLabel(pm));
+            fresh.add(new Entry(label, component, banner, icon));
+            addedPkgs.add(pkg);
+        }
+
         // Optional "Default home" tile (config.xml), only when this TV actually has a home-screen picker.
         if (showHomeSettings
                 && pm.resolveActivity(new Intent(Settings.ACTION_HOME_SETTINGS), 0) != null) {
