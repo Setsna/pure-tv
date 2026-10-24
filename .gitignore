@@ -17,3 +17,10 @@ scratch/
 !themes/**/*.png
 
 .DS_Store
+
+# Build artifacts & credentials
+release/
+*.jks
+*.keystore
+keystore.properties
+local.properties
