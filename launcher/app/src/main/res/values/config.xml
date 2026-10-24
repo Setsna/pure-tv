@@ -84,6 +84,6 @@
     <!-- Module cards: disabled for a completely clean, prompt-free minimal experience -->
     <bool name="module_cards">false</bool>
 
-    <!-- Force Obsidian Quiet Luxury Theme 24/7: Set to FALSE to enable automatic Day Mode (06:00-18:00) vs Night Mode (18:00-06:00) -->
-    <bool name="force_obsidian_theme">false</bool>
+    <!-- Force Obsidian Quiet Luxury Theme 24/7: Set to TRUE to keep dark obsidian glass permanently -->
+    <bool name="force_obsidian_theme">true</bool>
 </resources>

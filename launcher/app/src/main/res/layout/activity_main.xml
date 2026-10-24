@@ -102,11 +102,15 @@
                     android:layout_alignParentTop="true"
                     android:orientation="vertical">
 
-                    <!-- Typographic Clock & Date -->
+                    <!-- Typographic Clock & Date in Matching Glass Card -->
                     <LinearLayout
                         android:id="@+id/clockBlock"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:minWidth="360dp"
+                        android:background="@drawable/glass_capsule_bg"
+                        android:paddingHorizontal="24dp"
+                        android:paddingVertical="18dp"
                         android:orientation="vertical">
 
                         <LinearLayout
@@ -123,8 +127,8 @@
                                 android:format12Hour="h:mm"
                                 android:format24Hour="HH:mm"
                                 android:includeFontPadding="false"
-                                android:textColor="#F5F2EB"
-                                android:textSize="84sp"
+                                android:textColor="#FFFFFF"
+                                android:textSize="80sp"
                                 android:fontFamily="@font/manrope_medium"
                                 android:letterSpacing="-0.03" />
 
@@ -137,7 +141,7 @@
                                 android:format12Hour="a"
                                 android:format24Hour=""
                                 android:includeFontPadding="false"
-                                android:textColor="#C9AE7D"
+                                android:textColor="#E2C799"
                                 android:textSize="18sp"
                                 android:fontFamily="@font/manrope_medium"
                                 android:letterSpacing="0.08"
@@ -152,7 +156,7 @@
                             android:includeFontPadding="false"
                             android:format12Hour="EEEE · d MMMM yyyy"
                             android:format24Hour="EEEE · d MMMM yyyy"
-                            android:textColor="#B1B0B0"
+                            android:textColor="#CBD5E1"
                             android:textSize="13sp"
                             android:fontFamily="@font/outfit"
                             android:fontVariationSettings="'wght' 500"
@@ -370,19 +374,12 @@
             android:paddingTop="16dp"
             android:paddingBottom="16dp">
 
-            <!-- Wallpaper Title Eyebrow -->
+            <!-- Wallpaper Title Eyebrow (Hidden: plain, simple & premium) -->
             <TextView
                 android:id="@+id/ssWallpaperLabel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="6dp"
-                android:text="KARSTEN WÜRTH · MOUNTAIN STREAM"
-                android:textColor="#C9AE7D"
-                android:textSize="10.5sp"
-                android:fontFamily="@font/outfit"
-                android:fontVariationSettings="'wght' 600"
-                android:letterSpacing="0.14"
-                android:textAllCaps="true" />
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:visibility="gone" />
 
             <!-- Apple TV Screensaver Time & Current Weather Row -->
             <LinearLayout
@@ -398,7 +395,7 @@
                     android:format12Hour="h:mm"
                     android:format24Hour="HH:mm"
                     android:includeFontPadding="false"
-                    android:textColor="#F5F2EB"
+                    android:textColor="#FFFFFF"
                     android:textSize="60sp"
                     android:fontFamily="@font/outfit"
                     android:fontVariationSettings="'wght' 400"
@@ -413,7 +410,7 @@
                     android:format12Hour="a"
                     android:format24Hour=""
                     android:includeFontPadding="false"
-                    android:textColor="#C9AE7D"
+                    android:textColor="#E2C799"
                     android:textSize="14sp"
                     android:fontFamily="@font/outfit"
                     android:fontVariationSettings="'wght' 600"
@@ -446,7 +443,7 @@
                         android:layout_height="wrap_content"
                         android:includeFontPadding="false"
                         android:text="24°C"
-                        android:textColor="#F5F2EB"
+                        android:textColor="#FFFFFF"
                         android:textSize="26sp"
                         android:fontFamily="@font/outfit"
                         android:fontVariationSettings="'wght' 300" />
@@ -457,7 +454,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="1dp"
                         android:text="Chanakyapuri · Clear"
-                        android:textColor="#B1B0B0"
+                        android:textColor="#CBD5E1"
                         android:textSize="11.5sp"
                         android:fontFamily="@font/outfit"
                         android:fontVariationSettings="'wght' 400" />
@@ -478,7 +475,7 @@
                     android:layout_height="wrap_content"
                     android:format12Hour="EEEE, d MMMM yyyy"
                     android:format24Hour="EEEE, d MMMM yyyy"
-                    android:textColor="#B3F5F2EB"
+                    android:textColor="#CBD5E1"
                     android:textSize="12.5sp"
                     android:fontFamily="@font/outfit"
                     android:fontVariationSettings="'wght' 500"
@@ -491,7 +488,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="16dp"
                     android:text="·   +3h 29°   ·   +6h 26°   ·   +12h 22°"
-                    android:textColor="#80F5F2EB"
+                    android:textColor="#94A3B8"
                     android:textSize="11.5sp"
                     android:fontFamily="@font/outfit"
                     android:fontVariationSettings="'wght' 400" />

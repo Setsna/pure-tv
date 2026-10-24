@@ -812,11 +812,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 GradientDrawable gd = new GradientDrawable();
                 gd.setCornerRadius(20 * density);
                 if (focused) {
-                    gd.setColor(isDayMode ? 0x99FFFFFF : 0xE6262932);
-                    gd.setStroke((int) (2 * density), isDayMode ? 0x99B79A63 : 0xB3C9AE7D);
+                    gd.setColor(0xF020232E);
+                    gd.setStroke((int) (2 * density), 0xFF60A5FA);
                 } else {
-                    gd.setColor(isDayMode ? 0x80F5F4EF : 0xD61B1D23);
-                    gd.setStroke((int) Math.max(1, 1 * density), isDayMode ? 0x26191A1F : 0x26F5F2EB);
+                    gd.setColor(0xEE14161E);
+                    gd.setStroke((int) Math.max(1, 1 * density), 0x2EFFFFFF);
                 }
                 v.setBackground(gd);
             });
@@ -831,11 +831,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
         if (tvTodayTemp != null) {
             tvTodayTemp.setText(Math.round(data.currentTempC) + "°");
-            tvTodayTemp.setTextColor(isDayMode ? 0xFF191A1F : 0xFFF5F2EB);
+            tvTodayTemp.setTextColor(0xFFFFFFFF);
         }
         if (tvTodayCondition != null) {
             tvTodayCondition.setText(conditionLabel(data.currentWeatherCode));
-            tvTodayCondition.setTextColor(isDayMode ? 0xFF666973 : 0xFFB1B0B0);
+            tvTodayCondition.setTextColor(0xFFCBD5E1);
         }
 
         // Only show rain chance if genuinely likely — don't clutter with "5%" noise
@@ -843,6 +843,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             int todayRain = (data.daily != null && data.daily.length > 0) ? data.daily[0].rainChancePercent : 0;
             if (todayRain >= 30) {
                 tvRainChance.setText(todayRain + "% rain");
+                tvRainChance.setTextColor(0xFF60A5FA);
                 tvRainChance.setVisibility(View.VISIBLE);
             } else {
                 tvRainChance.setVisibility(View.GONE);
@@ -860,14 +861,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
                 if (tvDayLabel != null) {
                     tvDayLabel.setText(f.dayLabel);
-                    tvDayLabel.setTextColor(isDayMode ? 0xFF666973 : 0xFFB1B0B0);
+                    tvDayLabel.setTextColor(0xFFA0A4B4);
                 }
                 if (ivDayIcon != null) {
                     ivDayIcon.setImageResource(iconForWeatherCode(f.weatherCode));
                 }
                 if (tvDayMaxMin != null) {
                     tvDayMaxMin.setText(Math.round(f.maxC) + "° / " + Math.round(f.minC) + "°");
-                    tvDayMaxMin.setTextColor(isDayMode ? 0xFF191A1F : 0xFFF5F2EB);
+                    tvDayMaxMin.setTextColor(0xFFFFFFFF);
                 }
                 dailyForecastRow.addView(dayView, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
             }
@@ -1119,35 +1120,37 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         boolean day = !forceObsidian && (hour >= 6 && hour < 18);
         isDayMode = day;
 
-        // Visual tokens (Night: OLED Cinema / Midnight Glass; Day: Warm Minimal)
-        int bgColor = day ? 0xFFF2F0EB : 0xFF090A0C;
-        int primaryText = day ? 0xFF191A1F : 0xFFF5F2EB;
-        int secondaryText = day ? 0xFF666973 : 0xFFB1B0B0;
-        int tertiaryText = day ? 0xFF858792 : 0xFF777A84;
-        int warmAccent = day ? 0xFFB79A63 : 0xFFC9AE7D;
-        int focusAccent = day ? 0xFF3979C6 : 0xFF87B9EA;
-        int glassCard = day ? 0x80F5F4EF : 0xD61B1D23;     // Neutral charcoal glass: #1B1D23
-        int glassControl = day ? 0x80F6F5F1 : 0xD1191B20;  // Neutral control glass: #191B20
-        int glassBorder = day ? 0x26191A1F : 0x26F5F2EB;   // Warm ivory translucent edge: 15% #F5F2EB
+        // Visual tokens (Cinema Quiet Luxury — OLED / Midnight Glass)
+        // High contrast against photographic wallpaper, zero milky or whitish haze
+        int bgColor = 0xFF090A0C;
+        int primaryText = 0xFFFFFFFF;
+        int secondaryText = 0xFFCBD5E1;
+        int tertiaryText = 0xFF94A3B8;
+        int warmAccent = 0xFFE2C799;
+        int focusAccent = 0xFF60A5FA;
+        int glassCard = 0xEE14161E;     // Rich 93% obsidian charcoal glass: zero haze
+        int glassControl = 0xD6181A22;  // Neutral control track glass
+        int glassBorder = 0x2EFFFFFF;   // Crisp 18% white micro-edge
 
         root.setBackgroundColor(bgColor);
         if (wallpaperScrim != null) {
-            wallpaperScrim.setBackgroundResource(day ? R.drawable.day_warm_vignette : R.drawable.apple_tv_vignette);
+            wallpaperScrim.setBackgroundResource(R.drawable.apple_tv_vignette);
             wallpaperScrim.animate().alpha(1.0f).setDuration(300).start();
         }
-        if (clock != null) clock.setTextColor(0xFFF5F2EB);
+        if (clock != null) clock.setTextColor(0xFFFFFFFF);
         if (ampm != null) ampm.setTextColor(warmAccent);
         if (date != null) date.setTextColor(secondaryText);
         if (greeting != null) greeting.setTextColor(warmAccent);
         if (clockDivider != null) clockDivider.setBackgroundColor(glassBorder);
         if (heroName != null) heroName.setTextColor(primaryText);
         if (ambientDrawable != null && ambientColor != 0) {
-            ambientDrawable.updateChromaticField(ambientColor, 0, day);
+            ambientDrawable.updateChromaticField(ambientColor, 0, false);
         }
-        if (brandMark != null) brandMark.setTextColor(day ? 0x40191A1F : 0x33F5F5F7);
+        if (brandMark != null) brandMark.setTextColor(0x33F5F5F7);
         if (exploreHint != null) exploreHint.setVisibility(View.GONE);
 
         View weatherWidget = findViewById(R.id.weatherWidget);
+        View clockBlock = findViewById(R.id.clockBlock);
         View topButtons = findViewById(R.id.topButtons);
         if (weatherWidget != null) {
             android.graphics.drawable.GradientDrawable gd = new android.graphics.drawable.GradientDrawable();
@@ -1155,6 +1158,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             gd.setCornerRadius(20 * density);
             gd.setStroke((int) Math.max(1, 1 * density), glassBorder);
             weatherWidget.setBackground(gd);
+        }
+        if (clockBlock != null) {
+            android.graphics.drawable.GradientDrawable gd = new android.graphics.drawable.GradientDrawable();
+            gd.setColor(glassCard);
+            gd.setCornerRadius(20 * density);
+            gd.setStroke((int) Math.max(1, 1 * density), glassBorder);
+            clockBlock.setBackground(gd);
         }
         if (topButtons != null) {
             android.graphics.drawable.GradientDrawable gd = new android.graphics.drawable.GradientDrawable();
@@ -1164,13 +1174,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             topButtons.setBackground(gd);
         }
         if (dockDecoration != null) {
-            dockDecoration.setDayMode(day);
+            dockDecoration.setDayMode(false);
             if (grid != null) grid.invalidateItemDecorations();
         }
 
         // Focused & resting state colors for command track
-        int focusBgColor = day ? 0xE6FFFFFF : 0xFFF5F5F7;
-        int focusTextColor = day ? 0xFF191A1F : 0xFF090A0C;
+        int focusBgColor = 0xFFF5F5F7;
+        int focusTextColor = 0xFF090A0C;
         int restingTextColor = primaryText;
 
         int[][] states = new int[][] {
@@ -1214,19 +1224,21 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             }
         }
 
-        // Screensaver HUD day/night styling
+        // Screensaver HUD: Plain, simple, premium dark obsidian glass
         if (screensaverHud != null) {
             android.graphics.drawable.GradientDrawable sg = new android.graphics.drawable.GradientDrawable();
             sg.setColor(glassCard);
-            sg.setCornerRadius(28 * density);
+            sg.setCornerRadius(24 * density);
             sg.setStroke((int) Math.max(1, 1 * density), glassBorder);
             screensaverHud.setBackground(sg);
         }
-        if (ssWallpaperLabel != null) ssWallpaperLabel.setTextColor(warmAccent);
-        if (ssClock != null) ssClock.setTextColor(primaryText);
-        if (ssAmPm != null) ssAmPm.setTextColor(secondaryText);
+        if (ssWallpaperLabel != null) {
+            ssWallpaperLabel.setVisibility(View.GONE); // No clutter / photo titles
+        }
+        if (ssClock != null) ssClock.setTextColor(0xFFFFFFFF);
+        if (ssAmPm != null) ssAmPm.setTextColor(warmAccent);
         if (ssDate != null) ssDate.setTextColor(secondaryText);
-        if (ssWeatherTemp != null) ssWeatherTemp.setTextColor(primaryText);
+        if (ssWeatherTemp != null) ssWeatherTemp.setTextColor(0xFFFFFFFF);
         if (ssWeatherDesc != null) ssWeatherDesc.setTextColor(secondaryText);
         if (ssForecastSummary != null) ssForecastSummary.setTextColor(tertiaryText);
 
