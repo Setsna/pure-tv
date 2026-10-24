@@ -6,20 +6,35 @@
         <item name="android:windowAnimationStyle">@null</item>
     </style>
 
-    <!-- Unified Command Track Ghost Pill -->
+    <!-- Text that sits directly on the wallpaper photo: a soft shadow keeps it legible on any image. -->
+    <style name="OnPhotoText">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:shadowColor">@color/photo_text_shadow</item>
+        <item name="android:shadowRadius">16</item>
+        <item name="android:shadowDy">2</item>
+    </style>
+
+    <!-- Quick-control pill: frosted glass at rest, solid white with dark text on focus. -->
     <style name="TopButtonBase">
         <item name="android:layout_width">wrap_content</item>
-        <item name="android:layout_height">36dp</item>
+        <item name="android:layout_height">40dp</item>
         <item name="android:gravity">center</item>
-        <item name="android:paddingStart">16dp</item>
+        <item name="android:paddingStart">14dp</item>
         <item name="android:paddingEnd">16dp</item>
         <item name="android:drawablePadding">8dp</item>
         <item name="android:background">@drawable/top_button_bg</item>
         <item name="android:textColor">@drawable/pill_text</item>
         <item name="android:drawableTint">@drawable/pill_text</item>
-        <item name="android:textSize">12.5sp</item>
+        <item name="android:textSize">14sp</item>
         <item name="android:fontFamily">@font/outfit</item>
-        <item name="android:letterSpacing">0.04</item>
+        <item name="android:fontVariationSettings">"'wght' 500"</item>
+        <item name="android:letterSpacing">0.01</item>
+        <item name="android:singleLine">true</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:maxWidth">160dp</item>
         <item name="android:focusable">true</item>
         <item name="android:clickable">true</item>
     </style>

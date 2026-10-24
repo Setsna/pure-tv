@@ -37,8 +37,7 @@
                 android:format24Hour="HH:mm"
                 android:textColor="#E6FFFFFF"
                 android:textSize="120sp"
-                android:fontFamily="@font/outfit"
-                android:fontVariationSettings="'wght' 200"
+                android:fontFamily="@font/manrope_medium"
                 android:letterSpacing="-0.04"
                 android:includeFontPadding="false" />
 

@@ -53,7 +53,37 @@ public class DockPrefs {
                 editor.remove(KEY_PREFIX + i);
             }
         }
+        editor.putInt(KEY_REVISION, revision(ctx) + 1);
         editor.apply();
+    }
+
+    private static final String KEY_REVISION = "dock_revision";
+
+    /** Bumped on every dock edit, so the home screen knows to rebuild its tiles. */
+    public static int revision(Context ctx) {
+        return ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getInt(KEY_REVISION, 0);
+    }
+
+    /**
+     * Puts {@code pkg} in the slot now holding {@code replacedPkg} (or {@code fallbackSlot} when that
+     * app isn't a saved slot). If {@code pkg} was already docked elsewhere, the two swap places.
+     */
+    public static void assign(Context ctx, String replacedPkg, int fallbackSlot, String pkg) {
+        List<String> dock = new ArrayList<>(loadDock(ctx));
+        while (dock.size() < SLOT_COUNT) dock.add("");
+        int slot = replacedPkg != null ? dock.indexOf(replacedPkg) : -1;
+        if (slot < 0) slot = Math.max(0, Math.min(SLOT_COUNT - 1, fallbackSlot));
+        int existing = dock.indexOf(pkg);
+        if (existing == slot) return;
+        if (existing >= 0) dock.set(existing, dock.get(slot));
+        dock.set(slot, pkg);
+        dock.removeIf(String::isEmpty);
+        saveDock(ctx, dock);
+    }
+
+    /** Back to the automatic, installed-apps-based dock. */
+    public static void resetToRecommended(Context ctx) {
+        saveDock(ctx, AppDiscovery.getDefaultDockSelection(ctx, SLOT_COUNT));
     }
 
     public static void setSlot(Context ctx, int slotIndex, String packageName) {
@@ -61,6 +91,7 @@ public class DockPrefs {
         ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
            .edit()
            .putString(KEY_PREFIX + slotIndex, packageName)
+           .putInt(KEY_REVISION, revision(ctx) + 1)
            .apply();
     }
 }

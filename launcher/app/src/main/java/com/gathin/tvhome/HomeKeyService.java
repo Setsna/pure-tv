@@ -179,7 +179,6 @@ public class HomeKeyService extends AccessibilityService {
                 .addFlags(LAUNCH_FLAGS);
         try {
             startActivity(i);
-            freeMemoryAsync("in.startv.hotstar");
             return;
         } catch (Exception e) {
             android.util.Log.w(TAG, "Direct Hotstar launch failed, falling back", e);
@@ -193,7 +192,6 @@ public class HomeKeyService extends AccessibilityService {
                 .addFlags(LAUNCH_FLAGS);
         try {
             startActivity(i);
-            freeMemoryAsync("com.google.android.youtube.tv");
             return;
         } catch (Exception e) {
             android.util.Log.w(TAG, "Direct YouTube launch failed, falling back", e);
@@ -207,7 +205,6 @@ public class HomeKeyService extends AccessibilityService {
                     .setPackage("com.netflix.ninja")
                     .addFlags(LAUNCH_FLAGS);
             startActivity(keyIntent);
-            freeMemoryAsync("com.netflix.ninja");
             return;
         } catch (Exception ignored) {
         }
@@ -217,7 +214,6 @@ public class HomeKeyService extends AccessibilityService {
                 .addFlags(LAUNCH_FLAGS);
         try {
             startActivity(i);
-            freeMemoryAsync("com.netflix.ninja");
             return;
         } catch (Exception e) {
             android.util.Log.w(TAG, "Direct Netflix launch failed, falling back", e);
@@ -231,7 +227,6 @@ public class HomeKeyService extends AccessibilityService {
                     .setPackage("com.amazon.amazonvideo.livingroom")
                     .addFlags(LAUNCH_FLAGS);
             startActivity(buttonIntent);
-            freeMemoryAsync("com.amazon.amazonvideo.livingroom");
             return;
         } catch (Exception ignored) {
         }
@@ -241,7 +236,6 @@ public class HomeKeyService extends AccessibilityService {
                 .addFlags(LAUNCH_FLAGS);
         try {
             startActivity(i);
-            freeMemoryAsync("com.amazon.amazonvideo.livingroom");
             return;
         } catch (Exception e) {
             android.util.Log.w(TAG, "Direct Prime launch failed, falling back", e);
@@ -255,7 +249,6 @@ public class HomeKeyService extends AccessibilityService {
                 .addFlags(LAUNCH_FLAGS);
         try {
             startActivity(i);
-            freeMemoryAsync("com.mitv.tvhome.mitvplus");
             return;
         } catch (Exception ignored) {
         }
@@ -302,21 +295,11 @@ public class HomeKeyService extends AccessibilityService {
                 i.addFlags(LAUNCH_FLAGS);
                 try {
                     startActivity(i);
-                    freeMemoryAsync(pkg);
                     return;
                 } catch (Exception ignored) {
                 }
             }
         }
-    }
-
-    private void freeMemoryAsync(String pkg) {
-        new Thread(() -> {
-            try {
-                ProcessManager.freeMemoryForFocusedApp(HomeKeyService.this, pkg);
-            } catch (Throwable ignored) {
-            }
-        }).start();
     }
 
     @Override

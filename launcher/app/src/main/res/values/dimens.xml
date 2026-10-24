@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Corner radius scale: every rounded surface uses one of these three. -->
+    <dimen name="radius_tile">16dp</dimen>     <!-- dock tiles, input rows -->
+    <dimen name="radius_card">24dp</dimen>     <!-- clock, weather, dock shelf, popups, screensaver HUD -->
+    <dimen name="radius_pill">999dp</dimen>    <!-- command track and its buttons -->
+
+    <!-- Screen gutter shared by the top bar and the dock shelf so their edges line up. -->
+    <dimen name="screen_gutter_h">56dp</dimen>
+    <dimen name="section_gap">24dp</dimen>
+
+    <!-- Dock geometry: a row is the tile plus dock_row_pad_top above and dock_row_pad_bottom below;
+         the bottom pad holds the focused app's name. Two rows stack with no extra gap. -->
+    <dimen name="dock_row_pad_top">12dp</dimen>
+    <dimen name="dock_row_pad_bottom">36dp</dimen>
+</resources>

@@ -52,4 +52,10 @@
     <string name="wifi_qr_title">Wi-Fi Quick Connect</string>
     <string name="wifi_qr_subtitle">Scan with your phone to connect instantly</string>
     <string name="wifi_done">Done</string>
+    <string name="dock_editor_title">Choose an app</string>
+    <string name="dock_editor_subtitle">Replaces %1$s in your dock. Press and hold any dock tile to come back here.</string>
+    <string name="dock_reset">Reset dock to recommended</string>
+    <string name="dock_app_info">App info</string>
+    <string name="dock_in_dock">In dock</string>
+    <string name="dock_reset_done">Dock reset to recommended apps</string>
 </resources>

@@ -68,6 +68,13 @@
             android:theme="@android:style/Theme.NoDisplay" />
 
         <activity
+            android:name=".DockEditorActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:screenOrientation="landscape"
+            android:theme="@style/Theme.TvHome" />
+
+        <activity
             android:name=".WeatherGlassActivity"
             android:exported="true"
             android:screenOrientation="landscape"

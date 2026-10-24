@@ -38,6 +38,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.provider.Settings;
 import android.text.SpannableString;
 import android.text.Spanned;
@@ -125,6 +126,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private final Runnable memoryReaperTask = new Runnable() {
         @Override
         public void run() {
+            // Snapshot on the main thread: the map is only ever touched here.
+            final Map<String, Long> exited = new HashMap<>(exitedAppsTimestamps);
+            final String inUse = currentlyRunningPkg;
             new Thread(() -> {
                 ActivityManager am = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
                 if (am == null) return;
@@ -133,17 +137,16 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 long availMb = info.availMem / (1024 * 1024);
 
                 if (info.lowMemory || availMb < LOW_MEM_THRESHOLD_MB) {
-                    killExitedStreamingApps(am);
+                    ProcessManager.trimIdleApps(MainActivity.this, exited, inUse);
                 }
             }, "TvMemoryReaper").start();
             memoryReaperHandler.postDelayed(this, REAP_POLL_INTERVAL_MS);
         }
     };
 
-    private void killExitedStreamingApps(ActivityManager am) {
-        ProcessManager.freeMemoryForFocusedApp(this, currentlyRunningPkg);
-        System.gc();
-        Runtime.getRuntime().gc();
+    /** Under memory pressure, stop streaming apps left long ago; recently used ones stay warm. */
+    private void trimIdleStreamingApps() {
+        ProcessManager.trimIdleApps(this, exitedAppsTimestamps, currentlyRunningPkg);
     }
     private android.widget.TextClock clock;
     private android.widget.TextClock ampm;
@@ -301,11 +304,18 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         hiddenApps = new HashSet<>(cfg.hiddenApps);
 
         grid = findViewById(R.id.grid);
-        grid.setLayoutManager(new GridLayoutManager(this, COLUMNS));
+        // Both rows always fit in the grid (see syncDockHeights), so it never scrolls; the dock
+        // container's height alone decides whether one or two rows show.
+        grid.setLayoutManager(new GridLayoutManager(this, COLUMNS) {
+            @Override
+            public boolean canScrollVertically() {
+                return false;
+            }
+        });
         grid.setHasFixedSize(true);
         grid.setItemViewCacheSize(16);
         grid.setItemAnimator(null);
-        dockDecoration = new DockDecoration(COLUMNS, density);
+        dockDecoration = new DockDecoration(getResources());
         grid.addItemDecoration(dockDecoration);
         grid.setLayoutAnimation(new LayoutAnimationController(
                 AnimationUtils.loadAnimation(this, R.anim.tile_enter), 0.06f));
@@ -313,12 +323,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         grid.setAdapter(adapter);
         updateDayNightTheme();
 
-        // Dock & Explore row padding: provide 14dp headroom and footroom for focus expansion
         grid.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
-            int pad = (int) (14 * density);
-            if (grid.getPaddingTop() != pad || grid.getPaddingBottom() != pad) {
-                grid.setPadding(grid.getPaddingLeft(), pad, grid.getPaddingRight(), pad);
-            }
+            if (r - l != or - ol) grid.post(this::syncDockHeights);
         });
 
         btnLiveTv = findViewById(R.id.btnLiveTv);
@@ -493,16 +499,47 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
         tilesReady = false;
         promptsPaused = false;
-        reloadApps(true);
+        // Coming back from an app must be instant: rebuild the dock only when packages changed while
+        // we were away (the package receiver is off then), and play the entrance animation only once.
+        int dockRevision = DockPrefs.revision(this);
+        if (packagesChangedSinceLastLoad() || dockRevision != loadedDockRevision || adapter.getItemCount() == 0) {
+            reloadApps(!dockAnimated);
+            dockAnimated = true;
+            loadedDockRevision = dockRevision;
+        } else {
+            restoreFocus();
+        }
         updateGreeting();
         updateWifiLabel();
         updateInputsButton();
         updateDayNightTheme();
         handler.postDelayed(minuteTick, MINUTE_MS);
-        refreshWeather();
+        if (SystemClock.elapsedRealtime() - lastWeatherRequestMs > WEATHER_REFRESH_MS) refreshWeather();
         if (!isScreensaverActive) {
             resetInactivityTimer();
         }
+    }
+
+    /** PackageManager change counter at the last dock build; -1 before the first. */
+    private int packageSequence = -1;
+    private boolean dockAnimated = false;
+    /** DockPrefs revision the tiles were built from; a dock edit bumps it. */
+    private int loadedDockRevision = -1;
+    private long lastWeatherRequestMs = -WEATHER_REFRESH_MS;
+    /** Weather and location are refetched at most this often when returning home. */
+    private static final long WEATHER_REFRESH_MS = 15 * MINUTE_MS;
+
+    /** True when any app was installed, removed or updated since the dock was last built. */
+    private boolean packagesChangedSinceLastLoad() {
+        android.content.pm.ChangedPackages changed =
+                getPackageManager().getChangedPackages(Math.max(0, packageSequence));
+        if (packageSequence < 0) {
+            packageSequence = changed != null ? changed.getSequenceNumber() : 0;
+            return true;
+        }
+        if (changed == null) return false;
+        packageSequence = changed.getSequenceNumber();
+        return true;
     }
 
     public void onAppLaunched(String pkg) {
@@ -590,10 +627,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     @Override
     public void onTrimMemory(int level) {
         super.onTrimMemory(level);
-        if (level >= TRIM_MEMORY_RUNNING_LOW) {
-            ActivityManager am = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
-            if (am != null) killExitedStreamingApps(am);
-        }
+        if (level >= TRIM_MEMORY_RUNNING_LOW) trimIdleStreamingApps();
     }
 
     @Override
@@ -810,16 +844,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             weatherWidget.setOnFocusChangeListener((v, focused) -> {
                 float s = focused ? 1.03f : 1.0f;
                 v.animate().scaleX(s).scaleY(s).setDuration(150).start();
-                GradientDrawable gd = new GradientDrawable();
-                gd.setCornerRadius(20 * density);
-                if (focused) {
-                    gd.setColor(0xF020232E);
-                    gd.setStroke((int) (2 * density), 0xFF60A5FA);
-                } else {
-                    gd.setColor(0xEE14161E);
-                    gd.setStroke((int) Math.max(1, 1 * density), 0x2EFFFFFF);
-                }
-                v.setBackground(gd);
             });
         }
     }
@@ -832,11 +856,15 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
         if (tvTodayTemp != null) {
             tvTodayTemp.setText(Math.round(data.currentTempC) + "°");
-            tvTodayTemp.setTextColor(0xFFFFFFFF);
+            tvTodayTemp.setTextColor(getColor(R.color.text_primary));
         }
         if (tvTodayCondition != null) {
-            tvTodayCondition.setText(conditionLabel(data.currentWeatherCode));
-            tvTodayCondition.setTextColor(0xFFCBD5E1);
+            String condition = conditionLabel(data.currentWeatherCode);
+            if (data.daily != null && data.daily.length > 0) {
+                condition += "  ·  H " + Math.round(data.daily[0].maxC) + "°  L " + Math.round(data.daily[0].minC) + "°";
+            }
+            tvTodayCondition.setText(condition);
+            tvTodayCondition.setTextColor(getColor(R.color.text_secondary));
         }
 
         // Only show rain chance if genuinely likely — don't clutter with "5%" noise
@@ -844,7 +872,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             int todayRain = (data.daily != null && data.daily.length > 0) ? data.daily[0].rainChancePercent : 0;
             if (todayRain >= 30) {
                 tvRainChance.setText(todayRain + "% rain");
-                tvRainChance.setTextColor(0xFF60A5FA);
+                tvRainChance.setTextColor(getColor(R.color.accent_blue));
                 tvRainChance.setVisibility(View.VISIBLE);
             } else {
                 tvRainChance.setVisibility(View.GONE);
@@ -862,14 +890,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
                 if (tvDayLabel != null) {
                     tvDayLabel.setText(f.dayLabel);
-                    tvDayLabel.setTextColor(0xFFA0A4B4);
+                    tvDayLabel.setTextColor(getColor(R.color.text_secondary));
                 }
                 if (ivDayIcon != null) {
                     ivDayIcon.setImageResource(iconForWeatherCode(f.weatherCode));
                 }
                 if (tvDayMaxMin != null) {
                     tvDayMaxMin.setText(Math.round(f.maxC) + "° / " + Math.round(f.minC) + "°");
-                    tvDayMaxMin.setTextColor(0xFFFFFFFF);
+                    tvDayMaxMin.setTextColor(getColor(R.color.text_primary));
                 }
                 dailyForecastRow.addView(dayView, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
             }
@@ -913,6 +941,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     }
 
     private void refreshWeather() {
+        lastWeatherRequestMs = SystemClock.elapsedRealtime();
         LocationHelper.detectLocation(this, new LocationHelper.LocationCallback() {
             @Override
             public void onLocation(double lat, double lon) {
@@ -1031,6 +1060,35 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private View dockContainer;
     private ValueAnimator dockHeightAnimator;
 
+    /** Height of one dock row for the current grid width (tile + row padding). */
+    private int dockRowHeightPx() {
+        int inner = grid.getWidth() - grid.getPaddingLeft() - grid.getPaddingRight();
+        int tileW = AppAdapter.tileWidthPx(inner, COLUMNS, density);
+        return AppAdapter.rowHeightPx(AppAdapter.tileHeightPx(tileW), getResources());
+    }
+
+    /**
+     * Gives the grid room for exactly two rows and the container one row (two when expanded), so
+     * rows are never scrolled half out of view and no stray shelf edge shows above the dock.
+     */
+    private void syncDockHeights() {
+        if (dockContainer == null) dockContainer = findViewById(R.id.dockContainer);
+        if (dockContainer == null || grid == null) return;
+        int row = dockRowHeightPx();
+        ViewGroup.LayoutParams glp = grid.getLayoutParams();
+        if (glp.height != 2 * row) {
+            glp.height = 2 * row;
+            grid.setLayoutParams(glp);
+        }
+        if (dockHeightAnimator != null && dockHeightAnimator.isRunning()) return;
+        ViewGroup.LayoutParams clp = dockContainer.getLayoutParams();
+        int want = adapter != null && adapter.isExpanded() ? 2 * row : row;
+        if (clp.height != want) {
+            clp.height = want;
+            dockContainer.setLayoutParams(clp);
+        }
+    }
+
     private void animateDock(boolean expand, Runnable onEnd) {
         if (dockContainer == null) {
             dockContainer = findViewById(R.id.dockContainer);
@@ -1039,9 +1097,16 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             if (onEnd != null) onEnd.run();
             return;
         }
-        float d = getResources().getDisplayMetrics().density;
-        int collapsedH = Math.round(148 * d);
-        int expandedH = Math.round(296 * d);
+        int collapsedH = dockRowHeightPx();
+        int expandedH = 2 * collapsedH;
+
+        // The second row grows into the space the top area uses, so fade that area out while open.
+        View topBar = findViewById(R.id.topBar);
+        if (topBar != null) {
+            topBar.animate().alpha(expand ? 0f : 1f)
+                    .translationY(expand ? -24 * density : 0f)
+                    .setDuration(220).start();
+        }
 
         if (dockHeightAnimator != null && dockHeightAnimator.isRunning()) {
             dockHeightAnimator.cancel();
@@ -1169,23 +1234,23 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
         // Visual tokens (Cinema Quiet Luxury — OLED / Midnight Glass)
         // High contrast against photographic wallpaper, zero milky or whitish haze
-        int bgColor = 0xFF090A0C;
-        int primaryText = 0xFFFFFFFF;
-        int secondaryText = 0xFFCBD5E1;
-        int tertiaryText = 0xFF94A3B8;
-        int warmAccent = 0xFFE2C799;
-        int focusAccent = 0xFF60A5FA;
-        int glassCard = 0xEE14161E;     // Rich 93% obsidian charcoal glass: zero haze
-        int glassControl = 0xD6181A22;  // Neutral control track glass
-        int glassBorder = 0x2EFFFFFF;   // Crisp 18% white micro-edge
+        // All values come from colors.xml / dimens.xml so layouts and code can't drift apart.
+        int bgColor = getColor(R.color.night_bg);
+        int primaryText = getColor(R.color.text_primary);
+        int secondaryText = getColor(R.color.text_secondary);
+        int tertiaryText = getColor(R.color.text_tertiary);
+        int warmAccent = getColor(R.color.accent_warm);
+        int glassCard = getColor(R.color.night_glass_surface);
+        int glassBorder = getColor(R.color.night_glass_border);
+        float radiusCard = getResources().getDimension(R.dimen.radius_card);
 
         root.setBackgroundColor(bgColor);
         if (wallpaperScrim != null) {
             wallpaperScrim.setBackgroundResource(R.drawable.apple_tv_vignette);
             wallpaperScrim.animate().alpha(1.0f).setDuration(300).start();
         }
-        if (clock != null) clock.setTextColor(0xFFFFFFFF);
-        if (ampm != null) ampm.setTextColor(warmAccent);
+        if (clock != null) clock.setTextColor(primaryText);
+        if (ampm != null) ampm.setTextColor(secondaryText);
         if (date != null) date.setTextColor(secondaryText);
         if (greeting != null) greeting.setTextColor(warmAccent);
         if (clockDivider != null) clockDivider.setBackgroundColor(glassBorder);
@@ -1193,71 +1258,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (ambientDrawable != null && ambientColor != 0) {
             ambientDrawable.updateChromaticField(ambientColor, 0, false);
         }
-        if (brandMark != null) brandMark.setTextColor(0x33F5F5F7);
+        if (brandMark != null) brandMark.setTextColor(getColor(R.color.text_quiet));
         if (exploreHint != null) exploreHint.setVisibility(View.GONE);
 
-        View weatherWidget = findViewById(R.id.weatherWidget);
-        View clockBlock = findViewById(R.id.clockBlock);
-        View topButtons = findViewById(R.id.topButtons);
-        if (weatherWidget != null) {
-            android.graphics.drawable.GradientDrawable gd = new android.graphics.drawable.GradientDrawable();
-            gd.setColor(glassCard);
-            gd.setCornerRadius(20 * density);
-            gd.setStroke((int) Math.max(1, 1 * density), glassBorder);
-            weatherWidget.setBackground(gd);
-        }
-        if (clockBlock != null) {
-            android.graphics.drawable.GradientDrawable gd = new android.graphics.drawable.GradientDrawable();
-            gd.setColor(glassCard);
-            gd.setCornerRadius(20 * density);
-            gd.setStroke((int) Math.max(1, 1 * density), glassBorder);
-            clockBlock.setBackground(gd);
-        }
-        if (topButtons != null) {
-            android.graphics.drawable.GradientDrawable gd = new android.graphics.drawable.GradientDrawable();
-            gd.setColor(glassControl);
-            gd.setCornerRadius(999 * density);
-            gd.setStroke((int) Math.max(1, 1 * density), glassBorder);
-            topButtons.setBackground(gd);
-        }
-        if (dockDecoration != null) {
-            dockDecoration.setDayMode(false);
-            if (grid != null) grid.invalidateItemDecorations();
-        }
-
-        // Focused & resting state colors for command track
-        int focusBgColor = 0xFFF5F5F7;
-        int focusTextColor = 0xFF090A0C;
-        int restingTextColor = primaryText;
-
-        int[][] states = new int[][] {
-            new int[] { android.R.attr.state_focused },
-            new int[] { }
-        };
-        int[] textColors = new int[] { focusTextColor, restingTextColor };
-        android.content.res.ColorStateList pillColorStateList = new android.content.res.ColorStateList(states, textColors);
-
-        TextView[] pButtons = new TextView[] {
-            (btnLiveTv instanceof TextView) ? (TextView) btnLiveTv : null,
-            (btnInputs instanceof TextView) ? (TextView) btnInputs : null,
-            btnWifi,
-            btnSettings
-        };
-        for (TextView btn : pButtons) {
-            if (btn == null) continue;
-            btn.setTextColor(pillColorStateList);
-            btn.setCompoundDrawableTintList(pillColorStateList);
-
-            android.graphics.drawable.StateListDrawable sld = new android.graphics.drawable.StateListDrawable();
-            android.graphics.drawable.GradientDrawable focusedDrawable = new android.graphics.drawable.GradientDrawable();
-            focusedDrawable.setColor(focusBgColor);
-            focusedDrawable.setCornerRadius(999 * density);
-
-            android.graphics.drawable.ColorDrawable normalDrawable = new android.graphics.drawable.ColorDrawable(0x00000000);
-            sld.addState(new int[] { android.R.attr.state_focused }, focusedDrawable);
-            sld.addState(new int[] { }, normalDrawable);
-            btn.setBackground(sld);
-        }
+        // Clock, weather and the control pills draw their own looks from XML (text on the photo,
+        // frosted pills, weather focus plate), so nothing is painted over them here.
 
         if (tvTodayTemp != null) tvTodayTemp.setTextColor(primaryText);
         if (tvTodayCondition != null) tvTodayCondition.setTextColor(secondaryText);
@@ -1275,24 +1280,19 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (screensaverHud != null) {
             android.graphics.drawable.GradientDrawable sg = new android.graphics.drawable.GradientDrawable();
             sg.setColor(glassCard);
-            sg.setCornerRadius(24 * density);
+            sg.setCornerRadius(radiusCard);
             sg.setStroke((int) Math.max(1, 1 * density), glassBorder);
             screensaverHud.setBackground(sg);
         }
         if (ssWallpaperLabel != null) {
             ssWallpaperLabel.setVisibility(View.GONE); // No clutter / photo titles
         }
-        if (ssClock != null) ssClock.setTextColor(0xFFFFFFFF);
+        if (ssClock != null) ssClock.setTextColor(primaryText);
         if (ssAmPm != null) ssAmPm.setTextColor(warmAccent);
         if (ssDate != null) ssDate.setTextColor(secondaryText);
-        if (ssWeatherTemp != null) ssWeatherTemp.setTextColor(0xFFFFFFFF);
+        if (ssWeatherTemp != null) ssWeatherTemp.setTextColor(primaryText);
         if (ssWeatherDesc != null) ssWeatherDesc.setTextColor(secondaryText);
         if (ssForecastSummary != null) ssForecastSummary.setTextColor(tertiaryText);
-
-        if (dockDecoration != null) {
-            dockDecoration.setDayMode(day);
-            grid.invalidateItemDecorations();
-        }
     }
 
     /** Shows the Wi-Fi network name on the button when we can read it, otherwise the connection type. */

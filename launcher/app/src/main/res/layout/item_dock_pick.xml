@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One app in the dock editor grid: the same artwork as its dock tile, name and "In dock" beneath. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:gravity="center_horizontal"
+    android:paddingTop="8dp"
+    android:paddingBottom="14dp"
+    android:clipChildren="false"
+    android:clipToPadding="false">
+
+    <FrameLayout
+        android:id="@+id/pickCard"
+        android:layout_width="152dp"
+        android:layout_height="86dp"
+        android:background="@drawable/tile_bg"
+        android:focusable="true"
+        android:clickable="true">
+
+        <ImageView
+            android:id="@+id/pickArt"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:contentDescription="@null" />
+
+        <View
+            android:id="@+id/pickSheen"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/tile_sheen"
+            android:alpha="0.35" />
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/pickName"
+        style="@style/OnPhotoText"
+        android:layout_marginTop="10dp"
+        android:maxWidth="152dp"
+        android:singleLine="true"
+        android:ellipsize="end"
+        android:textSize="13sp"
+        android:fontFamily="@font/outfit"
+        android:fontVariationSettings="'wght' 500" />
+
+    <TextView
+        android:id="@+id/pickDocked"
+        style="@style/OnPhotoText"
+        android:layout_marginTop="3dp"
+        android:text="@string/dock_in_dock"
+        android:textColor="@color/text_tertiary"
+        android:textSize="10sp"
+        android:letterSpacing="0.12"
+        android:textAllCaps="true"
+        android:fontFamily="@font/outfit"
+        android:fontVariationSettings="'wght' 600"
+        android:visibility="gone" />
+</LinearLayout>

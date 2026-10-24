@@ -11,10 +11,12 @@ import android.widget.ImageView;
 import java.io.File;
 
 /**
- * Loads wallpaper dynamically from local TV storage without bundling inside the APK.
- * Keeps the APK ultra-lean while supporting high-res permanent wallpapers on home and lock screen.
+ * Loads the wallpaper from TV storage when a readable file is there, otherwise the bundled photo.
  */
 public class WallpaperHelper {
+
+    /** Bundled backdrop used when no wallpaper file on the TV is readable. */
+    static final int DEFAULT_WALLPAPER = R.drawable.wp_river;
 
     public static File getWallpaperFile(Context ctx) {
         if (ctx == null) return null;
@@ -36,12 +38,22 @@ public class WallpaperHelper {
         if (ctx == null || iv == null) return;
         new Thread(() -> {
             File target = getWallpaperFile(ctx);
-            if (target == null) return;
 
             Bitmap bmp = null;
             try {
                 DisplayMetrics dm = ctx.getResources().getDisplayMetrics();
                 BitmapFactory.Options opts = new BitmapFactory.Options();
+                if (target == null) {
+                    // No readable file on the TV (Android 11 blocks /sdcard for apps): use the bundled
+                    // photo so the home screen never falls back to a flat black backdrop.
+                    opts.inPreferredConfig = Bitmap.Config.RGB_565;
+                    bmp = BitmapFactory.decodeResource(ctx.getResources(), DEFAULT_WALLPAPER, opts);
+                    final Bitmap bundled = bmp;
+                    if (bundled != null) {
+                        new Handler(Looper.getMainLooper()).post(() -> iv.setImageBitmap(bundled));
+                    }
+                    return;
+                }
                 opts.inJustDecodeBounds = true;
                 BitmapFactory.decodeFile(target.getAbsolutePath(), opts);
 

@@ -1,6 +1,5 @@
 package com.gathin.tvhome;
 
-import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -13,7 +12,6 @@ import android.graphics.Color;
 import android.graphics.Outline;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
-import android.net.Uri;
 import android.provider.Settings;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -31,7 +29,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -82,7 +79,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         }
     }
 
-    static final float FOCUS_SCALE = 1.04f;
+    static final float FOCUS_SCALE = 1.08f;
     /** Design size of a tile (dp); tiles shrink from here when the columns don't fit, see tileWidthPx. */
     static final float DESIGN_W_DP = 180f, DESIGN_H_DP = 101f;
 
@@ -102,9 +99,15 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         return Math.round(tileWidthPx * DESIGN_H_DP / DESIGN_W_DP);
     }
 
-    /** Height of one grid item: the tile, the name label under it and the item's own padding. */
-    static int itemHeightPx(int tileHeightPx, float density) {
-        return tileHeightPx + Math.round(45 * density);
+    /** Opacity of a tile that doesn't have focus; one value for first bind and focus changes alike. */
+    static final float UNFOCUSED_ALPHA = 0.9f;
+    /** Sheen opacity on a tile without focus; full sheen marks the focused tile. */
+    static final float SHEEN_REST_ALPHA = 0.35f;
+
+    /** Height of one dock row: the tile plus the row padding above and below (see DockDecoration). */
+    static int rowHeightPx(int tileHeightPx, android.content.res.Resources res) {
+        return tileHeightPx + res.getDimensionPixelSize(R.dimen.dock_row_pad_top)
+                + res.getDimensionPixelSize(R.dimen.dock_row_pad_bottom);
     }
 
     private final Context ctx;
@@ -112,7 +115,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
     private final int dockSize;
     /** Dock order (config.xml dock_apps, or a theme's config.json). */
     private final List<String> favourites;
-    /** Never shown as tiles (res/values/config.xml, hidden_apps). */
+    /** Kept out of the general app list (res/values/config.xml, hidden_apps); a pinned dock slot still shows. */
     private final Set<String> hidden;
     private final boolean showHomeSettings;
     private final List<Entry> allItems = new ArrayList<>();
@@ -152,7 +155,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
 
         // Ensure every favourite is resolved
         for (String favPkg : favourites) {
-            if (!appMap.containsKey(favPkg) && !hidden.contains(favPkg)) {
+            if (!appMap.containsKey(favPkg)) {
                 if ("com.mitv.tvhome.mitvplus".equals(favPkg)) {
                     Intent mitvIntent = new Intent(Intent.ACTION_MAIN)
                             .setComponent(new ComponentName("com.mitv.tvhome.mitvplus", "com.mitv.tvhome.mitvplus.app.BannerLogoFree"));
@@ -179,9 +182,10 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         List<Entry> fresh = new ArrayList<>();
         Set<String> addedPkgs = new HashSet<>();
 
-        // 1. Add configured dock favourites in strict priority order (exactly one tile per app)
+        // 1. Add configured dock favourites in strict priority order (exactly one tile per app).
+        //    A pinned slot wins over hidden_apps: that list only keeps apps out of the general list.
         for (String favPkg : favourites) {
-            if (hidden.contains(favPkg) || addedPkgs.contains(favPkg)) continue;
+            if (addedPkgs.contains(favPkg)) continue;
             ResolveInfo ri = appMap.get(favPkg);
             if (ri == null || ri.activityInfo == null) continue;
 
@@ -271,78 +275,63 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
 
     private final Map<String, Drawable> artCache = new HashMap<>();
 
+    private static final String PKG_MITV_PLUS = "com.mitv.tvhome.mitvplus";
+
+    /**
+     * Full-bleed artwork for a tile: our own brand art for apps whose TV banner is missing or weak
+     * (TileArt specs), otherwise the app's own 16:9 banner, otherwise brand art built from its icon.
+     */
     private void bindTile(@NonNull Holder h, @NonNull Entry e) {
-        String pkg = e.pkg;
-        Drawable art = (pkg != null) ? artCache.get(pkg) : null;
-        CharSequence label = e.label;
+        CharSequence label = PKG_MITV_PLUS.equals(e.pkg) ? "Xiaomi TV+" : e.label;
+        h.name.setText(label);
+        h.card.setContentDescription(label);
 
-        if (art == null && pkg != null) {
+        String key = e.kind == Entry.HOME_SETTINGS ? "#home_settings" : e.pkg;
+        Drawable art = key != null ? artCache.get(key) : null;
+        if (art == null) {
+            art = resolveArt(e, label);
+            if (key != null) artCache.put(key, art);
+        }
+        h.art.setImageDrawable(art);
+    }
+
+    @NonNull
+    private Drawable resolveArt(@NonNull Entry e, CharSequence label) {
+        return artFor(ctx, e.pkg, label, e.banner, e.icon, e.kind == Entry.HOME_SETTINGS, e.ambient);
+    }
+
+    /**
+     * Tile artwork for any app, shared by the dock and the dock editor: our brand art (TileArt spec),
+     * else the app's own 16:9 banner, else brand art built from its icon's colour.
+     */
+    @NonNull
+    static Drawable artFor(Context ctx, String pkg, CharSequence label, Drawable banner, Drawable icon,
+                           boolean homeSettings, int accent) {
+        if (homeSettings) {
+            return new TileArt(ctx, new TileArt.Spec(0xFF8E8E93, 0xFF3A3A3C,
+                    R.drawable.ic_home_settings, String.valueOf(label), null), null);
+        }
+        TileArt.Spec spec = TileArt.specFor(pkg);
+        if (spec != null) return new TileArt(ctx, spec, null);
+
+        PackageManager pm = ctx.getPackageManager();
+        if (banner == null && pkg != null) {
             try {
-                PackageManager pm = ctx.getPackageManager();
-                if ("com.mitv.tvhome.mitvplus".equals(pkg)) {
-                    label = "Xiaomi TV+";
-                    try {
-                        art = ctx.getDrawable(R.drawable.tile_mitvplus);
-                    } catch (Throwable ignored) {
-                    }
-                    if (art == null) {
-                        Intent mitvIntent = new Intent(Intent.ACTION_MAIN)
-                                .setComponent(new ComponentName("com.mitv.tvhome.mitvplus", "com.mitv.tvhome.mitvplus.app.BannerLogoFree"));
-                        ResolveInfo ri = pm.resolveActivity(mitvIntent, PackageManager.MATCH_DISABLED_COMPONENTS);
-                        if (ri != null && ri.activityInfo != null) {
-                            art = ri.activityInfo.loadBanner(pm);
-                        }
-                    }
-                }
-                ApplicationInfo ai = pm.getApplicationInfo(pkg, 0);
-                if (label == null || label.length() == 0) {
-                    label = ai.loadLabel(pm);
-                }
-                if (art == null) {
-                    art = ai.loadBanner(pm); // 16:9 TV artwork, preferred
-                }
-                if (art == null && e.banner != null) {
-                    art = e.banner;
-                }
-                if (art == null) {
-                    art = ai.loadIcon(pm); // fallback: square app icon
-                    if (art == null && e.icon != null) {
-                        art = e.icon;
-                    }
-                }
-                if (art != null) {
-                    art.setBounds(0, 0, art.getIntrinsicWidth(), art.getIntrinsicHeight());
-                    artCache.put(pkg, art);
-                }
+                banner = pm.getApplicationInfo(pkg, 0).loadBanner(pm);
             } catch (PackageManager.NameNotFoundException ignored) {
-                if (e.banner != null) art = e.banner;
-                else if (e.icon != null) art = e.icon;
             }
-        } else if (art == null) {
-            if (e.banner != null) art = e.banner;
-            else if (e.icon != null) art = e.icon;
         }
-
-        if ("com.mitv.tvhome.mitvplus".equals(pkg)) {
-            label = "Xiaomi TV+";
+        if (banner != null && banner.getIntrinsicWidth() > banner.getIntrinsicHeight() * 1.3f) {
+            return banner;
         }
-
-        boolean hasBanner = (art != null && art.getIntrinsicWidth() > art.getIntrinsicHeight() * 1.3f);
-        if (hasBanner) {
-            h.banner.setScaleType(ImageView.ScaleType.CENTER_CROP);
-            h.banner.setPadding(0, 0, 0, 0);
-            h.label.setVisibility(View.GONE);
-        } else {
-            h.banner.setScaleType(ImageView.ScaleType.FIT_CENTER);
-            float d = h.itemView.getResources().getDisplayMetrics().density;
-            int padH = Math.round(36 * d);
-            int padT = Math.round(20 * d);
-            int padB = Math.round(36 * d);
-            h.banner.setPadding(padH, padT, padH, padB);
-            h.label.setText(label);
-            h.label.setVisibility(View.VISIBLE);
+        if (icon == null && pkg != null) {
+            try {
+                icon = pm.getApplicationIcon(pkg);
+            } catch (PackageManager.NameNotFoundException ignored) {
+            }
         }
-        h.banner.setImageDrawable(art);
+        int color = accent != 0 ? accent : vividColor(icon);
+        return new TileArt(ctx, TileArt.fromAccent(color, String.valueOf(label)), icon);
     }
 
     private int cachedCellWidth = 0;
@@ -358,16 +347,18 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
             cachedCellWidth = inner / dockSize;
         }
         int w = tileWidthPx(inner, dockSize, density), h = tileHeightPx(w);
+        // The item is exactly the tile's height; the name below draws into the row's bottom padding.
+        ViewGroup.LayoutParams itemLp = v.getLayoutParams();
+        itemLp.height = h;
+        v.setLayoutParams(itemLp);
         View card = v.findViewById(R.id.card);
-        card.setStateListAnimator(android.animation.AnimatorInflater.loadStateListAnimator(parent.getContext(), R.animator.tile_focus_animator));
         ViewGroup.LayoutParams cardLp = card.getLayoutParams();
         cardLp.width = w;
         cardLp.height = h;
         card.setLayoutParams(cardLp);
         View name = v.findViewById(R.id.name);
         ViewGroup.MarginLayoutParams nameLp = (ViewGroup.MarginLayoutParams) name.getLayoutParams();
-        nameLp.width = w;
-        nameLp.topMargin = h + Math.round(7 * density);
+        nameLp.topMargin = h + Math.round(10 * density);
         name.setLayoutParams(nameLp);
         return new Holder(v, listener);
     }
@@ -376,8 +367,9 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
     public void onBindViewHolder(@NonNull Holder h, int position) {
         Entry e = items.get(position);
         boolean focused = h.card.isFocused();
+        h.card.setAlpha(focused ? 1.0f : UNFOCUSED_ALPHA);
         h.name.setAlpha(focused ? 1f : 0f);
-        h.card.setAlpha(focused ? 1.0f : 0.82f);
+        h.sheen.setAlpha(focused ? 1f : SHEEN_REST_ALPHA);
 
         // Center tiles horizontally as a group when fewer items are in this row (e.g. 2 apps in secondary row or dock)
         int totalItems = items.size();
@@ -397,46 +389,11 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
 
         h.card.setOnClickListener(v -> launch(e));
         h.card.setOnLongClickListener(v -> {
-            showSlotConfigDialog(position, e);
+            if (e.kind == Entry.APP || e.kind == Entry.CARD) {
+                DockEditorActivity.open(ctx, h.getBindingAdapterPosition(), e.pkg, String.valueOf(e.label));
+            }
             return true;
         });
-    }
-
-    private void showSlotConfigDialog(int position, Entry current) {
-        if (position < 0 || position >= items.size()) return;
-        List<ResolveInfo> installed = AppDiscovery.getLeanbackApps(ctx);
-        if (installed == null || installed.isEmpty()) {
-            Toast.makeText(ctx, "No other apps found", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        PackageManager pm = ctx.getPackageManager();
-        CharSequence[] itemsList = new CharSequence[installed.size() + 1];
-        itemsList[0] = "⚙️ App Details / Settings";
-        for (int i = 0; i < installed.size(); i++) {
-            ResolveInfo ri = installed.get(i);
-            itemsList[i + 1] = ri.loadLabel(pm);
-        }
-
-        new android.app.AlertDialog.Builder(ctx, android.R.style.Theme_DeviceDefault_Dialog_Alert)
-                .setTitle("Customize Slot " + (position + 1) + ": " + current.label)
-                .setItems(itemsList, (dialog, which) -> {
-                    if (which == 0) {
-                        Intent i = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + current.pkg));
-                        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        try {
-                            ctx.startActivity(i);
-                        } catch (ActivityNotFoundException ignored) {}
-                    } else {
-                        ResolveInfo selected = installed.get(which - 1);
-                        String chosenPkg = selected.activityInfo.packageName;
-                        DockPrefs.setSlot(ctx, position, chosenPkg);
-                        Toast.makeText(ctx, "Assigned " + selected.loadLabel(pm) + " to Slot " + (position + 1), Toast.LENGTH_SHORT).show();
-                        reload(Collections.emptyList());
-                    }
-                })
-                .setNegativeButton("Cancel", null)
-                .show();
     }
 
     /** Opens the tile's activity by explicit component, with no extras: a card can name nothing else. */
@@ -458,18 +415,18 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
                 } catch (Exception ignored) {
                 }
             }
-            // Free RAM from other streaming apps BEFORE launching
-            ProcessManager.freeMemoryForFocusedApp(ctx, pkg);
-            if (ctx instanceof MainActivity) {
-                ((MainActivity) ctx).onAppLaunched(pkg);
-            }
         }
+        // Launch first, bookkeeping after: nothing may delay the app opening. Other apps are left
+        // running so switching back to them is instant (ProcessManager trims only idle ones later).
         Intent i = new Intent(Intent.ACTION_MAIN)
                 .addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER)
                 .setComponent(e.component)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
         try {
             ctx.startActivity(i);
+            if (ctx instanceof MainActivity && e.component != null) {
+                ((MainActivity) ctx).onAppLaunched(e.component.getPackageName());
+            }
         } catch (Exception ex) {
             try {
                 if (e.component != null) {
@@ -529,7 +486,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         return e.ambient;
     }
 
-    private static int vividColor(Drawable live) {
+    static int vividColor(Drawable live) {
         if (live == null) return 0xFF444444;
         // Draw a private copy: changing the bounds of the drawable an ImageView shows would blank the tile.
         Drawable d = live.getConstantState() != null ? live.getConstantState().newDrawable().mutate() : live;
@@ -571,32 +528,32 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         return Color.HSVToColor(hsv);
     }
 
-    /** Corner radius for a tile of this width: 20dp at the design width, proportionally less when smaller. */
-    static float cornerRadius(int tileWidthPx, float density) {
-        return 20f * density * Math.min(1f, tileWidthPx / (DESIGN_W_DP * density));
+    /** Corner radius for a tile of this width: radius_tile at the design width, proportionally less when smaller. */
+    static float cornerRadius(int tileWidthPx, android.content.res.Resources res) {
+        float density = res.getDisplayMetrics().density;
+        return res.getDimension(R.dimen.radius_tile) * Math.min(1f, tileWidthPx / (DESIGN_W_DP * density));
     }
 
     static final class Holder extends RecyclerView.ViewHolder {
         final View card;
-        final ImageView banner;
-        final ImageView icon;
-        final TextView label;
+        final ImageView art;
+        final View sheen;
         final TextView name;
 
         Holder(View v, TileListener listener) {
             super(v);
             card = v.findViewById(R.id.card);
-            banner = v.findViewById(R.id.banner);
-            icon = v.findViewById(R.id.icon);
-            label = v.findViewById(R.id.label);
+            art = v.findViewById(R.id.art);
+            sheen = v.findViewById(R.id.sheen);
             name = v.findViewById(R.id.name);
 
-            final float density = v.getResources().getDisplayMetrics().density;
+            final android.content.res.Resources res = v.getResources();
+            final float density = res.getDisplayMetrics().density;
             card.setOutlineProvider(new ViewOutlineProvider() {
                 @Override
                 public void getOutline(View view, Outline outline) {
-                    // 16dp at the design width, scaled down with the tile so small tiles keep the same shape.
-                    outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), cornerRadius(view.getWidth(), density));
+                    // radius_tile at the design width, scaled down with the tile so small tiles keep the same shape.
+                    outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), cornerRadius(view.getWidth(), res));
                 }
             });
             card.setClipToOutline(true);
@@ -610,15 +567,18 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
             });
 
             card.setOnFocusChangeListener((view, focused) -> {
+                // Apple TV style lift: grow, rise on a soft shadow, catch the light, show the name.
                 float s = focused ? FOCUS_SCALE : 1.0f;
-                float a = focused ? 1.0f : 0.72f;
+                float a = focused ? 1.0f : UNFOCUSED_ALPHA;
                 view.animate().scaleX(s).scaleY(s).alpha(a)
-                        .setDuration(focused ? 200 : 160)
+                        .translationZ(focused ? 14 * density : 0f)
+                        .setDuration(focused ? 150 : 120)
                         .setInterpolator(new DecelerateInterpolator())
                         .start();
+                sheen.animate().alpha(focused ? 1f : SHEEN_REST_ALPHA).setDuration(150).start();
                 name.animate().alpha(focused ? 1f : 0f)
-                        .translationY(focused ? density * 4f : -density * 6f)
-                        .setDuration(160).start();
+                        .translationY(focused ? 0f : -4 * density)
+                        .setDuration(140).start();
                 int pos = getBindingAdapterPosition();
                 if (focused && listener != null && pos != RecyclerView.NO_POSITION) {
                     listener.onTileFocused(pos, view);

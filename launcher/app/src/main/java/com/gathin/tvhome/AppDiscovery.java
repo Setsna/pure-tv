@@ -17,26 +17,48 @@ import java.util.Set;
 
 public class AppDiscovery {
 
+    /**
+     * Ranked dock candidates: one row per slot idea, first installed package of a row wins. Covers the
+     * apps common on Android TV / Xiaomi TVs so a fresh install fills the dock sensibly on any TV.
+     * The last {@link #SYSTEM_TAIL} rows (Settings, Play Store) are always kept room for at the end.
+     */
     public static final String[][] DOCK_PRIORITY = {
         {"com.mitv.tvhome.mitvplus", "com.mitv.livetv"},
         {"in.startv.hotstar"},
-        {"com.google.android.youtube.tv"},
+        {"com.google.android.youtube.tv", "com.liskovsoft.smarttubetv.beta", "com.teamsmart.videomanager.tv"},
         {"com.spotify.tv.android"},
         {"com.netflix.ninja", "com.netflix.mediaclient"},
         {"com.amazon.amazonvideo.livingroom"},
+        {"com.jio.media.ondemand", "com.jio.jioplay.tv"},
+        {"com.sonyliv"},
+        {"com.disney.disneyplus"},
+        {"com.apple.atve.androidtv.appletv"},
+        {"com.wbd.stream", "com.hbo.hbonow"},
+        {"com.plexapp.android"},
+        {"org.xbmc.kodi"},
+        {"org.videolan.vlc"},
+        {"com.xiaomi.mitv.mediaexplorer"},
         {"com.android.tv.settings", "com.android.settings"},
         {"com.android.vending"}
     };
 
+    /** How many rows at the end of DOCK_PRIORITY are system shortcuts that always get a slot. */
+    static final int SYSTEM_TAIL = 2;
+
     public static final Set<String> CURATED_PACKAGES;
+    /** The curated media/streaming apps only (no Settings / Play Store): what the memory trimmer may stop. */
+    public static final Set<String> STREAMING_PACKAGES;
     static {
         Set<String> set = new LinkedHashSet<>();
-        for (String[] candidates : DOCK_PRIORITY) {
-            for (String pkg : candidates) {
+        Set<String> streaming = new LinkedHashSet<>();
+        for (int i = 0; i < DOCK_PRIORITY.length; i++) {
+            for (String pkg : DOCK_PRIORITY[i]) {
                 set.add(pkg);
+                if (i < DOCK_PRIORITY.length - SYSTEM_TAIL) streaming.add(pkg);
             }
         }
         CURATED_PACKAGES = Collections.unmodifiableSet(set);
+        STREAMING_PACKAGES = Collections.unmodifiableSet(streaming);
     }
 
     public static List<ResolveInfo> getLeanbackApps(Context ctx) {
@@ -91,30 +113,43 @@ public class AppDiscovery {
     }
 
     public static List<String> getDefaultDockSelection(Set<String> installedPkgs, int slotCount) {
-        List<String> result = new ArrayList<>();
-
-        // Pass 1: priority candidates per slot
-        for (String[] slotCandidates : DOCK_PRIORITY) {
-            if (result.size() >= slotCount) break;
-            for (String pkg : slotCandidates) {
-                if (installedPkgs.contains(pkg)) {
-                    if (!result.contains(pkg)) {
-                        result.add(pkg);
-                        break;
-                    }
-                }
-            }
+        int appRows = DOCK_PRIORITY.length - SYSTEM_TAIL;
+        List<String> system = new ArrayList<>();
+        for (int i = appRows; i < DOCK_PRIORITY.length; i++) {
+            String pkg = firstInstalled(DOCK_PRIORITY[i], installedPkgs);
+            if (pkg != null) system.add(pkg);
         }
 
-        // Pass 2: fill remaining slots with other installed apps
+        // Pass 1: ranked apps, leaving room for the system shortcuts at the end
+        List<String> result = new ArrayList<>();
+        int appRoom = Math.max(0, slotCount - system.size());
+        for (int i = 0; i < appRows && result.size() < appRoom; i++) {
+            String pkg = firstInstalled(DOCK_PRIORITY[i], installedPkgs);
+            if (pkg != null && !result.contains(pkg)) result.add(pkg);
+        }
+
+        // Pass 2: other installed apps (alphabetical, for determinism) into the remaining app room
         List<String> remaining = new ArrayList<>(installedPkgs);
         remaining.removeAll(result);
+        remaining.removeAll(system);
         Collections.sort(remaining);
         for (String pkg : remaining) {
-            if (result.size() >= slotCount) break;
+            if (result.size() >= appRoom) break;
             result.add(pkg);
         }
 
+        // Pass 3: Settings and Play Store close the dock
+        for (String pkg : system) {
+            if (result.size() >= slotCount) break;
+            result.add(pkg);
+        }
         return result;
+    }
+
+    private static String firstInstalled(String[] candidates, Set<String> installed) {
+        for (String pkg : candidates) {
+            if (installed.contains(pkg)) return pkg;
+        }
+        return null;
     }
 }

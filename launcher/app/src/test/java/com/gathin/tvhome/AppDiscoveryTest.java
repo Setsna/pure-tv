@@ -82,4 +82,19 @@ public class AppDiscoveryTest {
         assertTrue("Extra app should be added in Pass 2", selection.contains("com.some.extra.app"));
         assertFalse("Missing Hotstar must not be in selection", selection.contains("in.startv.hotstar"));
     }
+
+    @Test
+    public void getDefaultDockSelection_keepsSettingsAndPlayStoreAtTheEnd() {
+        java.util.Set<String> installed = new java.util.HashSet<>(java.util.Arrays.asList(
+            "in.startv.hotstar", "com.google.android.youtube.tv", "com.spotify.tv.android",
+            "com.netflix.ninja", "com.amazon.amazonvideo.livingroom", "com.sonyliv",
+            "com.disney.disneyplus", "org.videolan.vlc",
+            "com.android.tv.settings", "com.android.vending"
+        ));
+        java.util.List<String> selection = AppDiscovery.getDefaultDockSelection(installed, 8);
+        assertEquals(8, selection.size());
+        assertEquals("com.android.tv.settings", selection.get(6));
+        assertEquals("com.android.vending", selection.get(7));
+        assertEquals("in.startv.hotstar", selection.get(0));
+    }
 }
