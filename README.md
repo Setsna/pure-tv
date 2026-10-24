@@ -124,6 +124,12 @@ mivibe-tv/
 └── LICENSE                    # MIT License
 ```
 
+## 🎨 Wallpapers & Photography
+
+Landscape wallpapers bundled with CleanYourTV are courtesy of talented photographers on Unsplash under royalty-free licenses:
+- **Johannes Plenio** ([unsplash.com/@jplenio](https://unsplash.com/@jplenio))
+- **Jonatan Pie** ([unsplash.com/@jonatanpie](https://unsplash.com/@jonatanpie))
+
 ---
 
 ## 📄 License

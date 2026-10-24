@@ -24,8 +24,8 @@ public class AppDiscovery {
         {"com.spotify.tv.android"},
         {"com.netflix.ninja", "com.netflix.mediaclient"},
         {"com.amazon.amazonvideo.livingroom"},
-        {"com.jio.jiotvsdk.tv"},
-        {"org.videolan.vlc"}
+        {"com.android.tv.settings", "com.android.settings"},
+        {"com.android.vending"}
     };
 
     public static final Set<String> CURATED_PACKAGES;
