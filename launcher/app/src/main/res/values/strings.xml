@@ -59,5 +59,9 @@
     <string name="dock_in_dock">In dock</string>
     <string name="dock_reset_done">Dock reset to recommended apps</string>
     <string name="weather_title">Weather</string>
-    <string name="weather_no_rain">No rain expected in the next 24 hours</string>
+    <string name="weather_no_rain">No rain in the next 24 hours</string>
+    <string name="stat_feels">Feels like</string>
+    <string name="stat_humidity">Humidity</string>
+    <string name="stat_wind">Wind</string>
+    <string name="stat_air">Air quality</string>
 </resources>

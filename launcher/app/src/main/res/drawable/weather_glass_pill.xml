@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Rain pill: the control pills' smoked glass and edge, so it mirrors them across the screen. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/frost_fill" />
+    <corners android:radius="@dimen/radius_pill" />
+    <stroke android:width="1dp" android:color="@color/frost_edge" />
+</shape>

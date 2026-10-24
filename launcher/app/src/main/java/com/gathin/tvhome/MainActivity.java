@@ -194,10 +194,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private TextView tvTodayTemp;
     private TextView tvTodayCondition;
     private TextView tvRainChance;
-    private TextView tvWeatherLocation;
-    private TextView tvTodayHighLow;
-    private TextView tvWeatherDetails;
-    private TextView tvAqi;
+    private View weatherNow;
+    private TextView tvFeels, tvHumidity, tvWind, tvAqiValue, tvAqiLabel;
     private LinearLayout hourlyRow;
     private TextView exploreHint;
 
@@ -811,10 +809,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         tvTodayTemp = findViewById(R.id.tvTodayTemp);
         tvTodayCondition = findViewById(R.id.tvTodayCondition);
         tvRainChance = findViewById(R.id.tvRainChance);
-        tvWeatherLocation = findViewById(R.id.tvWeatherLocation);
-        tvTodayHighLow = findViewById(R.id.tvTodayHighLow);
-        tvWeatherDetails = findViewById(R.id.tvWeatherDetails);
-        tvAqi = findViewById(R.id.tvAqi);
+        weatherNow = findViewById(R.id.weatherNow);
+        tvFeels = findViewById(R.id.tvFeels);
+        tvHumidity = findViewById(R.id.tvHumidity);
+        tvWind = findViewById(R.id.tvWind);
+        tvAqiValue = findViewById(R.id.tvAqiValue);
+        tvAqiLabel = findViewById(R.id.tvAqiLabel);
         hourlyRow = findViewById(R.id.hourlyRow);
     }
 
@@ -823,16 +823,28 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         long now = System.currentTimeMillis();
 
         weatherWidget.setVisibility(View.VISIBLE);
+        weatherNow.setVisibility(View.VISIBLE);
+        tvRainChance.setVisibility(View.VISIBLE);
 
-        String city = LocationHelper.cityName(this);
-        tvWeatherLocation.setText(city);
-        tvWeatherLocation.setVisibility(city.isEmpty() ? View.GONE : View.VISIBLE);
+        // Mirror of the clock: icon + temperature, and a subtitle like the date:
+        // "Chanakyapuri  ·  Clear  ·  H 31°  L 21°"
         tvTodayTemp.setText(Math.round(data.currentTempC) + "°");
         ivTodayIcon.setImageResource(iconForWeatherCode(data.currentWeatherCode, data.isDay));
-        tvTodayCondition.setText(WeatherHelper.describe(data.currentWeatherCode));
+        String city = LocationHelper.cityName(this);
+        int comma = city.indexOf(',');
+        if (comma > 0) city = city.substring(0, comma);
+        StringBuilder sub = new StringBuilder();
+        if (!city.isEmpty()) sub.append(city).append("  ·  ");
+        sub.append(WeatherHelper.describe(data.currentWeatherCode));
         if (data.daily != null && data.daily.length > 0) {
-            tvTodayHighLow.setText("H:" + Math.round(data.daily[0].maxC) + "°  L:" + Math.round(data.daily[0].minC) + "°");
+            sub.append("  ·  H ").append(Math.round(data.daily[0].maxC)).append("°  L ")
+               .append(Math.round(data.daily[0].minC)).append('°');
         }
+        tvTodayCondition.setText(sub);
+        tvTodayCondition.setCompoundDrawablesRelativeWithIntrinsicBounds(
+                city.isEmpty() ? 0 : R.drawable.ic_location_arrow, 0, 0, 0);
+        tvTodayCondition.setCompoundDrawableTintList(
+                android.content.res.ColorStateList.valueOf(getColor(R.color.text_secondary)));
 
         // Next six hours
         hourlyRow.removeAllViews();
@@ -860,8 +872,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             at.setTimeInMillis(rain.timeMs);
             java.util.Calendar today = java.util.Calendar.getInstance();
             boolean tomorrow = at.get(java.util.Calendar.DAY_OF_YEAR) != today.get(java.util.Calendar.DAY_OF_YEAR);
-            String when = (tomorrow ? "tomorrow around " : "around ") + hourFmt.format(new java.util.Date(rain.timeMs)).toUpperCase(Locale.getDefault());
-            tvRainChance.setText("Rain likely " + when + " · " + rain.rainChancePercent + "%");
+            String when = (tomorrow ? "tomorrow around " : "likely around ") + hourFmt.format(new java.util.Date(rain.timeMs)).toUpperCase(Locale.getDefault());
+            tvRainChance.setText("Rain " + when + "  ·  " + rain.rainChancePercent + "%");
             tvRainChance.setTextColor(getColor(R.color.rain_blue));
             tvRainChance.setCompoundDrawableTintList(android.content.res.ColorStateList.valueOf(getColor(R.color.rain_blue)));
         } else {
@@ -870,19 +882,18 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             tvRainChance.setCompoundDrawableTintList(android.content.res.ColorStateList.valueOf(getColor(R.color.text_secondary)));
         }
 
-        StringBuilder details = new StringBuilder("Feels like " + Math.round(data.feelsLikeC) + "°");
-        if (data.humidity >= 0) details.append("  ·  Humidity ").append(data.humidity).append('%');
-        if (data.windKmh >= 0) details.append("  ·  Wind ").append(Math.round(data.windKmh)).append(" km/h");
-        tvWeatherDetails.setText(details);
-
+        // Stats: icon + label above, value below; AQI value takes its category colour.
+        tvFeels.setText(Math.round(data.feelsLikeC) + "°");
+        tvHumidity.setText(data.humidity >= 0 ? data.humidity + "%" : "–");
+        tvWind.setText(data.windKmh >= 0 ? Math.round(data.windKmh) + " km/h" : "–");
         if (data.aqi >= 0) {
-            android.text.SpannableString aqi = new android.text.SpannableString(
-                    "\u25CF  Air quality " + data.aqi + " · " + WeatherHelper.aqiLabel(data.aqi));
-            aqi.setSpan(new android.text.style.ForegroundColorSpan(aqiColor(data.aqi)), 0, 1, 0);
-            tvAqi.setText(aqi);
-            tvAqi.setVisibility(View.VISIBLE);
+            tvAqiValue.setText(String.valueOf(data.aqi));
+            tvAqiValue.setTextColor(aqiColor(data.aqi));
+            tvAqiLabel.setText(WeatherHelper.aqiLabel(data.aqi));
         } else {
-            tvAqi.setVisibility(View.GONE);
+            tvAqiValue.setText("–");
+            tvAqiValue.setTextColor(getColor(R.color.text_primary));
+            tvAqiLabel.setText("");
         }
 
         // Sync with Screensaver HUD

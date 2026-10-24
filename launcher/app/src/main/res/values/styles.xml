@@ -17,6 +17,46 @@
         <item name="android:shadowDy">2</item>
     </style>
 
+    <!-- Weather stat tile parts: small caps label with icon, then a large value. -->
+    <style name="WeatherStatLabel">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:singleLine">true</item>
+        <item name="android:drawablePadding">5dp</item>
+        <item name="android:drawableTint">@color/text_tertiary</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:textColor">@color/text_tertiary</item>
+        <item name="android:textSize">10sp</item>
+        <item name="android:letterSpacing">0.06</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:fontFamily">@font/outfit</item>
+        <item name="android:fontVariationSettings">"'wght' 600"</item>
+    </style>
+    <style name="WeatherStatValue">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">8dp</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:singleLine">true</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textSize">22sp</item>
+        <item name="android:fontFamily">@font/outfit</item>
+        <item name="android:fontVariationSettings">"'wght' 400"</item>
+    </style>
+    <style name="WeatherStatSub">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">4dp</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:singleLine">true</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:textSize">11.5sp</item>
+        <item name="android:fontFamily">@font/outfit</item>
+        <item name="android:fontVariationSettings">"'wght' 500"</item>
+    </style>
+
     <!-- Quick-control pill: frosted glass at rest, solid white with dark text on focus. -->
     <style name="TopButtonBase">
         <item name="android:layout_width">wrap_content</item>
