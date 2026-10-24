@@ -194,7 +194,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private TextView tvTodayTemp;
     private TextView tvTodayCondition;
     private TextView tvRainChance;
-    private LinearLayout dailyForecastRow;
+    private TextView tvWeatherLocation;
+    private TextView tvTodayHighLow;
+    private TextView tvWeatherDetails;
+    private TextView tvAqi;
+    private LinearLayout hourlyRow;
     private TextView exploreHint;
 
     // Apple TV Ambient Idle Watchdog (5 minutes of inactivity on home screen)
@@ -332,6 +336,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         btnSettings = findViewById(R.id.btnSettings);
         if (btnLiveTv != null) {
             btnLiveTv.setOnClickListener(v -> openLiveTv());
+            // Long press: pick which input the set-top box is on again.
+            btnLiveTv.setOnLongClickListener(v -> {
+                showInputs(true);
+                return true;
+            });
         }
         btnInputs.setOnClickListener(v -> showInputs());
         btnWifi.setOnClickListener(v -> openNetworkPill());
@@ -346,19 +355,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             return true;
         });
 
-        // Keep focus on the top bar at its ends and route predictably to weatherWidget or stay bounded
+        // Keep focus on the top bar at its ends; the weather widget is display-only and never takes focus.
         View.OnKeyListener pillKeys = (v, keyCode, event) -> {
             if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
-            if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
-                if (v.getId() == R.id.btnSettings) {
-                    View ww = findViewById(R.id.weatherWidget);
-                    if (ww != null) {
-                        ww.requestFocus();
-                        return true;
-                    }
-                }
-                return true;
-            }
+            if (keyCode == KeyEvent.KEYCODE_DPAD_UP) return true;
             if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT) {
                 // The left end is Live TV, or Inputs, or Wi-Fi on a box without inputs.
                 if (btnLiveTv != null && btnLiveTv.getVisibility() == View.VISIBLE) {
@@ -367,14 +367,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 return v.getId() == R.id.btnInputs
                         || (v.getId() == R.id.btnWifi && btnInputs.getVisibility() != View.VISIBLE);
             }
-            if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && v.getId() == R.id.btnSettings) {
-                View ww = findViewById(R.id.weatherWidget);
-                if (ww != null) {
-                    ww.requestFocus();
-                    return true;
-                }
-                return true;
-            }
+            if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && v.getId() == R.id.btnSettings) return true;
             return false;
         };
         if (btnLiveTv != null) btnLiveTv.setOnKeyListener(pillKeys);
@@ -816,91 +809,79 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         tvTodayTemp = findViewById(R.id.tvTodayTemp);
         tvTodayCondition = findViewById(R.id.tvTodayCondition);
         tvRainChance = findViewById(R.id.tvRainChance);
-        dailyForecastRow = findViewById(R.id.dailyForecastRow);
-
-        if (weatherWidget != null) {
-            weatherWidget.setFocusable(true);
-            weatherWidget.setClickable(true);
-            weatherWidget.setOnClickListener(v -> {
-                Intent intent = new Intent(this, WeatherGlassActivity.class);
-                startActivity(intent);
-                overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
-            });
-            weatherWidget.setOnKeyListener((v, keyCode, event) -> {
-                if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
-                if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT || keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
-                    if (btnSettings != null) btnSettings.requestFocus();
-                    return true;
-                }
-                if (keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER) {
-                    v.performClick();
-                    return true;
-                }
-                if (keyCode == KeyEvent.KEYCODE_DPAD_UP || keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
-                    return true; // clamp within overscan bounds
-                }
-                return false;
-            });
-            weatherWidget.setOnFocusChangeListener((v, focused) -> {
-                float s = focused ? 1.03f : 1.0f;
-                v.animate().scaleX(s).scaleY(s).setDuration(150).start();
-            });
-        }
+        tvWeatherLocation = findViewById(R.id.tvWeatherLocation);
+        tvTodayHighLow = findViewById(R.id.tvTodayHighLow);
+        tvWeatherDetails = findViewById(R.id.tvWeatherDetails);
+        tvAqi = findViewById(R.id.tvAqi);
+        hourlyRow = findViewById(R.id.hourlyRow);
     }
 
     private void renderWeather(WeatherHelper.WeatherData data) {
-        if (data == null) return;
+        if (data == null || weatherWidget == null) return;
+        long now = System.currentTimeMillis();
 
-        if (ivTodayIcon != null) {
-            ivTodayIcon.setImageResource(iconForWeatherCode(data.currentWeatherCode));
+        weatherWidget.setBackground(weatherSky(data.currentWeatherCode, data.isDay));
+        weatherWidget.setVisibility(View.VISIBLE);
+
+        String city = LocationHelper.cityName(this);
+        tvWeatherLocation.setText(city);
+        tvWeatherLocation.setVisibility(city.isEmpty() ? View.GONE : View.VISIBLE);
+        tvTodayTemp.setText(Math.round(data.currentTempC) + "°");
+        ivTodayIcon.setImageResource(iconForWeatherCode(data.currentWeatherCode, data.isDay));
+        tvTodayCondition.setText(WeatherHelper.describe(data.currentWeatherCode));
+        if (data.daily != null && data.daily.length > 0) {
+            tvTodayHighLow.setText("H:" + Math.round(data.daily[0].maxC) + "°  L:" + Math.round(data.daily[0].minC) + "°");
         }
-        if (tvTodayTemp != null) {
-            tvTodayTemp.setText(Math.round(data.currentTempC) + "°");
-            tvTodayTemp.setTextColor(getColor(R.color.text_primary));
-        }
-        if (tvTodayCondition != null) {
-            String condition = conditionLabel(data.currentWeatherCode);
-            if (data.daily != null && data.daily.length > 0) {
-                condition += "  ·  H " + Math.round(data.daily[0].maxC) + "°  L " + Math.round(data.daily[0].minC) + "°";
+
+        // Next six hours
+        hourlyRow.removeAllViews();
+        java.text.SimpleDateFormat hourFmt = new java.text.SimpleDateFormat("h a", Locale.getDefault());
+        boolean first = true;
+        for (WeatherHelper.WeatherData.Hourly h : data.upcomingHours(now, 6)) {
+            View cell = LayoutInflater.from(this).inflate(R.layout.weather_hour_item, hourlyRow, false);
+            ((TextView) cell.findViewById(R.id.tvHourLabel)).setText(hourFmt.format(new java.util.Date(h.timeMs)).toUpperCase(Locale.getDefault()));
+            ((ImageView) cell.findViewById(R.id.ivHourIcon)).setImageResource(iconForWeatherCode(h.weatherCode, h.isDay));
+            ((TextView) cell.findViewById(R.id.tvHourTemp)).setText(Math.round(h.tempC) + "°");
+            TextView rain = cell.findViewById(R.id.tvHourRain);
+            if (h.rainChancePercent >= 20) {
+                rain.setText(h.rainChancePercent + "%");
+                rain.setVisibility(View.VISIBLE);
             }
-            tvTodayCondition.setText(condition);
-            tvTodayCondition.setTextColor(getColor(R.color.text_secondary));
+            hourlyRow.addView(cell);
+            first = false;
+        }
+        hourlyRow.setVisibility(first ? View.GONE : View.VISIBLE);
+
+        // Rain in the next 24 hours: when, and how likely. Only future hours count.
+        WeatherHelper.WeatherData.Hourly rain = data.rainAlert(now);
+        if (rain != null) {
+            java.util.Calendar at = java.util.Calendar.getInstance();
+            at.setTimeInMillis(rain.timeMs);
+            java.util.Calendar today = java.util.Calendar.getInstance();
+            boolean tomorrow = at.get(java.util.Calendar.DAY_OF_YEAR) != today.get(java.util.Calendar.DAY_OF_YEAR);
+            String when = (tomorrow ? "tomorrow around " : "around ") + hourFmt.format(new java.util.Date(rain.timeMs)).toUpperCase(Locale.getDefault());
+            tvRainChance.setText("Rain likely " + when + " · " + rain.rainChancePercent + "%");
+            tvRainChance.setTextColor(getColor(R.color.rain_blue));
+            tvRainChance.setCompoundDrawableTintList(android.content.res.ColorStateList.valueOf(getColor(R.color.rain_blue)));
+        } else {
+            tvRainChance.setText(R.string.weather_no_rain);
+            tvRainChance.setTextColor(getColor(R.color.text_secondary));
+            tvRainChance.setCompoundDrawableTintList(android.content.res.ColorStateList.valueOf(getColor(R.color.text_secondary)));
         }
 
-        // Only show rain chance if genuinely likely — don't clutter with "5%" noise
-        if (tvRainChance != null) {
-            int todayRain = (data.daily != null && data.daily.length > 0) ? data.daily[0].rainChancePercent : 0;
-            if (todayRain >= 30) {
-                tvRainChance.setText(todayRain + "% rain");
-                tvRainChance.setTextColor(getColor(R.color.accent_blue));
-                tvRainChance.setVisibility(View.VISIBLE);
-            } else {
-                tvRainChance.setVisibility(View.GONE);
-            }
-        }
+        StringBuilder details = new StringBuilder("Feels like " + Math.round(data.feelsLikeC) + "°");
+        if (data.humidity >= 0) details.append("  ·  Humidity ").append(data.humidity).append('%');
+        if (data.windKmh >= 0) details.append("  ·  Wind ").append(Math.round(data.windKmh)).append(" km/h");
+        tvWeatherDetails.setText(details);
 
-        if (dailyForecastRow != null && data.daily != null) {
-            dailyForecastRow.removeAllViews();
-            for (int i = 1; i < data.daily.length; i++) { // skip index 0 (today already shown above)
-                WeatherHelper.WeatherData.DailyForecast f = data.daily[i];
-                View dayView = LayoutInflater.from(this).inflate(R.layout.weather_day_item, dailyForecastRow, false);
-                TextView tvDayLabel = dayView.findViewById(R.id.tvDayLabel);
-                ImageView ivDayIcon = dayView.findViewById(R.id.ivDayIcon);
-                TextView tvDayMaxMin = dayView.findViewById(R.id.tvDayMaxMin);
-
-                if (tvDayLabel != null) {
-                    tvDayLabel.setText(f.dayLabel);
-                    tvDayLabel.setTextColor(getColor(R.color.text_secondary));
-                }
-                if (ivDayIcon != null) {
-                    ivDayIcon.setImageResource(iconForWeatherCode(f.weatherCode));
-                }
-                if (tvDayMaxMin != null) {
-                    tvDayMaxMin.setText(Math.round(f.maxC) + "° / " + Math.round(f.minC) + "°");
-                    tvDayMaxMin.setTextColor(getColor(R.color.text_primary));
-                }
-                dailyForecastRow.addView(dayView, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-            }
+        if (data.aqi >= 0) {
+            android.text.SpannableString aqi = new android.text.SpannableString(
+                    "\u25CF  Air quality " + data.aqi + " · " + WeatherHelper.aqiLabel(data.aqi));
+            aqi.setSpan(new android.text.style.ForegroundColorSpan(aqiColor(data.aqi)), 0, 1, 0);
+            tvAqi.setText(aqi);
+            tvAqi.setVisibility(View.VISIBLE);
+        } else {
+            tvAqi.setVisibility(View.GONE);
         }
 
         // Sync with Screensaver HUD
@@ -919,12 +900,43 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     }
 
     private int iconForWeatherCode(int code) {
-        if (code == 0) return R.drawable.ic_sunny;
-        if (code <= 3) return R.drawable.ic_partly_cloudy;
+        return iconForWeatherCode(code, true);
+    }
+
+    private int iconForWeatherCode(int code, boolean day) {
+        if (code <= 1) return day ? R.drawable.ic_sunny : R.drawable.ic_moon;
+        if (code <= 2) return day ? R.drawable.ic_partly_cloudy : R.drawable.ic_partly_cloudy_night;
         if (code <= 48) return R.drawable.ic_cloudy;
         if (code <= 67 || (code >= 80 && code <= 82)) return R.drawable.ic_rain;
         if (code >= 95) return R.drawable.ic_storm;
         return R.drawable.ic_cloudy;
+    }
+
+    /** The widget's sky: a gradient for the conditions and time of day, like Apple's weather widget. */
+    private android.graphics.drawable.Drawable weatherSky(int code, boolean day) {
+        int top, bottom;
+        if (code >= 95) {
+            top = 0xFF2B3040; bottom = 0xFF4A5165;                      // storm
+        } else if (code >= 51) {
+            top = day ? 0xFF4C5E75 : 0xFF263142; bottom = day ? 0xFF6E8196 : 0xFF3C4A5E;   // rain
+        } else if (code >= 3) {
+            top = day ? 0xFF5E7186 : 0xFF2A3341; bottom = day ? 0xFF8696A8 : 0xFF46505F;   // overcast, fog
+        } else {
+            top = day ? 0xFF2F7FD0 : 0xFF0C1631; bottom = day ? 0xFF5FA5E6 : 0xFF283C6E;   // clear, partly cloudy
+        }
+        android.graphics.drawable.GradientDrawable g = new android.graphics.drawable.GradientDrawable(
+                android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM, new int[] {top, bottom});
+        g.setCornerRadius(getResources().getDimension(R.dimen.radius_card));
+        g.setStroke(Math.max(1, Math.round(density)), getColor(R.color.night_glass_border));
+        return g;
+    }
+
+    private int aqiColor(int aqi) {
+        if (aqi <= 50) return getColor(R.color.aqi_green);
+        if (aqi <= 100) return getColor(R.color.aqi_yellow);
+        if (aqi <= 150) return getColor(R.color.aqi_orange);
+        if (aqi <= 200) return getColor(R.color.aqi_red);
+        return getColor(R.color.aqi_purple);
     }
 
     private String conditionLabel(int code) {
@@ -962,17 +974,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
             @Override
             public void onError() {
-                if (isFinishing() || isDestroyed()) return;
-                new WeatherHelper(MainActivity.this).fetchWeather(LocationHelper.DEFAULT_LAT, LocationHelper.DEFAULT_LON, new WeatherHelper.WeatherCallback() {
-                    @Override
-                    public void onResult(WeatherHelper.WeatherData data) {
-                        if (isFinishing() || isDestroyed()) return;
-                        renderWeather(data);
-                    }
-
-                    @Override
-                    public void onError() {}
-                });
+                // No location known at all (first boot offline): leave the weather hidden until one is.
             }
         });
     }
@@ -1264,18 +1266,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         // Clock, weather and the control pills draw their own looks from XML (text on the photo,
         // frosted pills, weather focus plate), so nothing is painted over them here.
 
-        if (tvTodayTemp != null) tvTodayTemp.setTextColor(primaryText);
-        if (tvTodayCondition != null) tvTodayCondition.setTextColor(secondaryText);
-        if (dailyForecastRow != null) {
-            for (int i = 0; i < dailyForecastRow.getChildCount(); i++) {
-                View child = dailyForecastRow.getChildAt(i);
-                TextView dLabel = child.findViewById(R.id.tvDayLabel);
-                TextView dMaxMin = child.findViewById(R.id.tvDayMaxMin);
-                if (dLabel != null) dLabel.setTextColor(secondaryText);
-                if (dMaxMin != null) dMaxMin.setTextColor(primaryText);
-            }
-        }
-
         // Screensaver HUD: Plain, simple, premium dark obsidian glass
         if (screensaverHud != null) {
             android.graphics.drawable.GradientDrawable sg = new android.graphics.drawable.GradientDrawable();
@@ -1378,25 +1368,26 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         open(i != null ? i : new Intent(Settings.ACTION_WIFI_SETTINGS));
     }
 
-    /** Direct shortcut to HDMI 2 for Airtel Xstream Set Top Box */
+    private static final String PREFS_TV_BOX = "tv_box";
+    private static final String KEY_TV_BOX_INPUT = "input_id";
+
+    /**
+     * The set-top box button: switches to the HDMI input the viewer chose for their box. The first
+     * press (or a long press) shows the input list in "choose" mode and remembers the pick.
+     */
     private void openLiveTv() {
-        onAppLaunched("com.mitv.livetv");
+        String saved = getSharedPreferences(PREFS_TV_BOX, MODE_PRIVATE).getString(KEY_TV_BOX_INPUT, null);
         TvInputManager tim = (TvInputManager) getSystemService(TV_INPUT_SERVICE);
-        String targetInput = "com.mediatek.tvinput/.hdmi.HDMIInputService/HW5";
-        if (tim != null) {
-            for (TvInputInfo info : tim.getTvInputList()) {
-                if (info.isPassthroughInput() && info.getType() == TvInputInfo.TYPE_HDMI) {
-                    CharSequence label = info.loadLabel(this);
-                    String lbl = label != null ? label.toString().toUpperCase(Locale.ROOT) : "";
-                    String id = info.getId();
-                    if (lbl.contains("AIRTEL") || lbl.contains("XSTREAM") || id.contains("HW5") || lbl.contains("2")) {
-                        targetInput = id;
-                        break;
-                    }
-                }
-            }
+        if (saved != null && tim != null && tim.getTvInputInfo(saved) != null) {
+            onAppLaunched("com.mitv.livetv");
+            openInput(saved);
+            return;
         }
-        openInput(targetInput);
+        showInputs(true);
+    }
+
+    private void rememberTvBoxInput(String inputId) {
+        getSharedPreferences(PREFS_TV_BOX, MODE_PRIVATE).edit().putString(KEY_TV_BOX_INPUT, inputId).apply();
     }
 
     /** Hides the Inputs pill when it would have nothing to list: streaming boxes have no HDMI-in, AV or tuner. */
@@ -1476,7 +1467,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     /** Dropdown menu under the Inputs pill: HDMI ports (with connection state), AV and Live TV. */
     private void showInputs() {
-        View anchor = findViewById(R.id.btnInputs);
+        showInputs(false);
+    }
+
+    /** @param chooseTvBox list HDMI/AV only; the picked input becomes the set-top box button's target */
+    private void showInputs(boolean chooseTvBox) {
+        View anchor = findViewById(chooseTvBox ? R.id.btnLiveTv : R.id.btnInputs);
         View panel = getLayoutInflater().inflate(R.layout.popup_inputs, root, false);
         LinearLayout rows = panel.findViewById(R.id.rows);
 
@@ -1525,15 +1521,17 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 int state = hdmi && hdmiStateBogus ? -1 : tim.getInputState(id);
                 if (!hdmi && rows.getChildCount() > 0 && !sawNonHdmi) addSeparator(rows);
                 if (!hdmi) sawNonHdmi = true;
-                addInputRow(rows, popup, hdmi ? R.drawable.ic_input : R.drawable.ic_av, label, state,
-                        () -> openInput(id));
+                addInputRow(rows, popup, hdmi ? R.drawable.ic_input : R.drawable.ic_av, label, state, () -> {
+                    if (chooseTvBox) rememberTvBoxInput(id);
+                    openInput(id);
+                });
             }
         }
         // Nothing to list where there is no TvInputManager: the TV's own source panel switches inputs.
         if (rows.getChildCount() == 0 && !sourcePanelService.isEmpty()) {
             addInputRow(rows, popup, R.drawable.ic_input, getString(R.string.inputs), -1, this::openSourcePanel);
         }
-        Intent liveTv = liveTvIntent();
+        Intent liveTv = chooseTvBox ? null : liveTvIntent();
         if (liveTv != null && tunerId != null) {
             liveTv = new Intent(Intent.ACTION_VIEW)
                     .setDataAndType(TvContract.buildChannelUriForPassthroughInput(tunerId), "vnd.android.cursor.item/channel")

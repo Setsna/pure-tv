@@ -9,7 +9,7 @@
     <string name="standby">Standby</string>
     <string name="not_connected">No device</string>
     <string name="live_tv">Live TV</string>
-    <string name="airtel_dish_tv">Airtel Dish TV</string>
+    <string name="tv_box">Set-top Box</string>
     <string name="xiaomi_tv_plus">Xiaomi TV+</string>
     <string name="no_inputs">No inputs found</string>
     <string name="good_morning">Good morning</string>
@@ -58,4 +58,6 @@
     <string name="dock_app_info">App info</string>
     <string name="dock_in_dock">In dock</string>
     <string name="dock_reset_done">Dock reset to recommended apps</string>
+    <string name="weather_title">Weather</string>
+    <string name="weather_no_rain">No rain expected in the next 24 hours</string>
 </resources>

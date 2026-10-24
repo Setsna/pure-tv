@@ -2,6 +2,12 @@ plugins {
     id 'com.android.application'
 }
 
+// Per-TV settings that must never be committed live in launcher/local.properties (git-ignored):
+//   weather.location=28.5983,77.1897,Chanakyapuri, New Delhi
+def localProps = new Properties()
+def localPropsFile = rootProject.file('local.properties')
+if (localPropsFile.exists()) localPropsFile.withInputStream { localProps.load(it) }
+
 android {
     namespace 'com.gathin.tvhome'
     compileSdk 34
@@ -12,6 +18,8 @@ android {
         targetSdk 34
         versionCode 4
         versionName '3.0.0'
+        // Pinned weather location ("lat,lon,City"); empty = detect from the TV's internet connection.
+        resValue 'string', 'weather_location', localProps.getProperty('weather.location', '')
     }
 
     buildTypes {

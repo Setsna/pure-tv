@@ -13,20 +13,29 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 
 /**
- * IP-based automatic geolocation helper for Android TV.
- * Uses ipapi.co free tier with fallback to SharedPreferences and Delhi coordinates.
+ * Where the weather is for. In order: the {@code weather_location} override in config.xml
+ * ("lat,lon,City" for viewers whose ISP makes IP lookup land in the wrong city), a location found
+ * within the last day, a fresh IP lookup (ipapi.co, no key), any older cached location. With none of
+ * these the callback gets {@code onError} and the weather simply isn't shown.
  */
 public class LocationHelper {
     private static final String PREFS_NAME = "location_cache";
     private static final String KEY_LAT = "cached_lat";
     private static final String KEY_LON = "cached_lon";
-
-    public static final double DEFAULT_LAT = 28.5983;
-    public static final double DEFAULT_LON = 77.1897;
+    private static final String KEY_CITY = "cached_city";
+    private static final String KEY_TIME = "cached_at";
+    private static final long FRESH_MS = 24 * 60 * 60 * 1000L;
 
     public interface LocationCallback {
         void onLocation(double lat, double lon);
         void onError();
+    }
+
+    /** The configured or last detected city name, or "" when unknown. */
+    public static String cityName(Context ctx) {
+        double[] override = parseOverride(ctx.getString(R.string.weather_location));
+        if (override != null) return overrideCity(ctx.getString(R.string.weather_location));
+        return prefs(ctx).getString(KEY_CITY, "");
     }
 
     public static void detectLocation(Context ctx, LocationCallback cb) {
@@ -34,37 +43,71 @@ public class LocationHelper {
             cb.onError();
             return;
         }
-        SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        double cachedLat = prefs.getFloat(KEY_LAT, (float) DEFAULT_LAT);
-        double cachedLon = prefs.getFloat(KEY_LON, (float) DEFAULT_LON);
+        Handler main = new Handler(Looper.getMainLooper());
+        double[] override = parseOverride(ctx.getString(R.string.weather_location));
+        if (override != null) {
+            main.post(() -> cb.onLocation(override[0], override[1]));
+            return;
+        }
+
+        SharedPreferences prefs = prefs(ctx);
+        boolean hasCache = prefs.contains(KEY_LAT) && prefs.contains(KEY_LON);
+        double cachedLat = prefs.getFloat(KEY_LAT, 0f);
+        double cachedLon = prefs.getFloat(KEY_LON, 0f);
+        if (hasCache && System.currentTimeMillis() - prefs.getLong(KEY_TIME, 0L) < FRESH_MS) {
+            main.post(() -> cb.onLocation(cachedLat, cachedLon));
+            return;
+        }
 
         new Thread(() -> {
             try {
-                // ipapi.co free tier (~1000 req/day per TV IP) — no key required, returns lat/lon from TV's IP
                 URL url = new URL("https://ipapi.co/json/");
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setConnectTimeout(4000);
                 conn.setReadTimeout(4000);
-                BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
                 StringBuilder sb = new StringBuilder();
-                String line;
-                while ((line = reader.readLine()) != null) sb.append(line);
-                reader.close();
-
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) sb.append(line);
+                }
                 JSONObject json = new JSONObject(sb.toString());
                 double lat = json.getDouble("latitude");
                 double lon = json.getDouble("longitude");
-
                 prefs.edit()
                      .putFloat(KEY_LAT, (float) lat)
                      .putFloat(KEY_LON, (float) lon)
+                     .putString(KEY_CITY, json.optString("city", ""))
+                     .putLong(KEY_TIME, System.currentTimeMillis())
                      .apply();
-
-                new Handler(Looper.getMainLooper()).post(() -> cb.onLocation(lat, lon));
+                main.post(() -> cb.onLocation(lat, lon));
             } catch (Exception e) {
-                // Safe fallback to cached or default coordinates
-                new Handler(Looper.getMainLooper()).post(() -> cb.onLocation(cachedLat, cachedLon));
+                if (hasCache) main.post(() -> cb.onLocation(cachedLat, cachedLon));
+                else main.post(cb::onError);
             }
         }).start();
+    }
+
+    /** "lat,lon[,City]" → {lat, lon}, or null when empty or malformed. */
+    static double[] parseOverride(String value) {
+        if (value == null || value.trim().isEmpty()) return null;
+        String[] parts = value.split(",");
+        if (parts.length < 2) return null;
+        try {
+            double lat = Double.parseDouble(parts[0].trim());
+            double lon = Double.parseDouble(parts[1].trim());
+            if (lat < -90 || lat > 90 || lon < -180 || lon > 180) return null;
+            return new double[] {lat, lon};
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    static String overrideCity(String value) {
+        String[] parts = value.split(",", 3);
+        return parts.length == 3 ? parts[2].trim() : "";
+    }
+
+    private static SharedPreferences prefs(Context ctx) {
+        return ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
     }
 }

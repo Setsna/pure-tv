@@ -329,7 +329,24 @@ public class WeatherGlassActivity extends Activity {
     }
 
     private void loadWeatherData() {
-        new WeatherHelper(this).fetchWeather(28.5983, 77.1897, new WeatherHelper.WeatherCallback() {
+        LocationHelper.detectLocation(this, new LocationHelper.LocationCallback() {
+            @Override
+            public void onLocation(double lat, double lon) {
+                if (isFinishing() || isDestroyed()) return;
+                String city = LocationHelper.cityName(WeatherGlassActivity.this);
+                TextView title = findViewById(R.id.weatherLocTitle);
+                if (title != null) title.setText(city.isEmpty() ? getString(R.string.weather_title) : city);
+                loadWeatherData(lat, lon);
+            }
+
+            @Override
+            public void onError() {
+            }
+        });
+    }
+
+    private void loadWeatherData(double lat, double lon) {
+        new WeatherHelper(this).fetchWeather(lat, lon, new WeatherHelper.WeatherCallback() {
             @Override
             public void onResult(WeatherHelper.WeatherData data) {
                 runOnUiThread(() -> {
@@ -341,7 +358,7 @@ public class WeatherGlassActivity extends Activity {
                     statPrecip.setText("Feels like: " + Math.round(data.feelsLikeC) + "°");
                     statHumidity.setText("Humidity: " + data.humidity + "%");
                     statWind.setText("Wind: " + Math.round(data.windKmh) + " km/h");
-                    updateAqiPosition(85);
+                    if (data.aqi >= 0) updateAqiPosition(data.aqi);
                 });
             }
 

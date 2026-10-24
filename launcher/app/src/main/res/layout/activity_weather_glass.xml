@@ -53,7 +53,7 @@
                     android:id="@+id/weatherLocTitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Chanakyapuri, New Delhi"
+                    android:text="@string/weather_title"
                     android:textColor="#F5F2EB"
                     android:textSize="24sp"
                     android:fontFamily="@font/outfit"

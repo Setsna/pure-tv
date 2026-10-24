@@ -23,6 +23,7 @@
     <color name="frost_fill">#66101318</color>              <!-- smoked glass on photos: pills, focused weather; hides busy photo detail -->
     <color name="frost_edge">#33FFFFFF</color>
     <color name="editor_scrim">#B3000000</color>              <!-- dims the wallpaper behind the dock editor -->
+    <color name="rain_blue">#7CC4FF</color>                   <!-- rain chance in the weather widget -->
     <color name="photo_text_shadow">#A6000000</color>
     <color name="tile_surface_top">#F2262932</color>        <!-- dock tile gradient, a step lighter than the shelf -->
     <color name="tile_surface_bottom">#F21B1D25</color>

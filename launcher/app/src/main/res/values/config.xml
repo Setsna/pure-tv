@@ -86,4 +86,8 @@
 
     <!-- Force Obsidian Quiet Luxury Theme 24/7: Set to TRUE to keep dark obsidian glass permanently -->
     <bool name="force_obsidian_theme">true</bool>
+
+    <!-- Weather location: set weather.location=lat,lon,City in launcher/local.properties (git-ignored)
+         to pin it, e.g. weather.location=19.076,72.8777,Mumbai. Unset, the TV's location is detected
+         from its internet connection. -->
 </resources>
