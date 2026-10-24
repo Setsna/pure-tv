@@ -121,7 +121,7 @@ cd launcher
 To pin the weather to one place (a TV that never moves), add a line to `launcher/local.properties`, which is never committed:
 
 ```
-weather.location=28.5983,77.1897,Chanakyapuri, New Delhi
+weather.location=19.0760,72.8777,Mumbai
 ```
 
 Release builds sign with the key configured in `~/.gradle/gradle.properties` (`PURETV_STORE_FILE`, `PURETV_STORE_PASSWORD`, `PURETV_KEY_ALIAS`, `PURETV_KEY_PASSWORD`); without it they use the debug key. Install a build with `./install.sh install <tv-ip> --apk launcher/app/build/outputs/apk/release/app-release.apk`.
