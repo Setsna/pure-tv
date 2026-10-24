@@ -9,7 +9,7 @@ public class DockPrefs {
     private static final String PREFS_NAME = "dock_prefs";
     private static final String KEY_PREFIX = "dock_slot_";
     private static final String KEY_DOCK_VERSION = "dock_version";
-    private static final int CURRENT_DOCK_VERSION = 3; // Phase 3: Xiaomi TV+ in dock, Airtel Dish TV in header pill
+    private static final int CURRENT_DOCK_VERSION = 4; // Phase 4: Enforce sequence Xiaomi TV+, Hotstar, YouTube, Spotify
     public static final int SLOT_COUNT = 8;
 
     public static List<String> loadDock(Context ctx) {

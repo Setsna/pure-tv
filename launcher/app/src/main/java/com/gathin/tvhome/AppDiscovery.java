@@ -35,14 +35,14 @@ public class AppDiscovery {
         Intent leanback = new Intent(Intent.ACTION_MAIN);
         leanback.addCategory("android.intent.category.LEANBACK_LAUNCHER");
 
-        List<ResolveInfo> rawApps = pm.queryIntentActivities(leanback, 0);
+        List<ResolveInfo> rawApps = pm.queryIntentActivities(leanback, PackageManager.MATCH_DISABLED_COMPONENTS);
 
         // Fallback: standard launcher category if Leanback returns nothing
         // (some sideloaded apps on budget TVs lack the Leanback intent-filter)
         if (rawApps == null || rawApps.isEmpty()) {
             Intent standard = new Intent(Intent.ACTION_MAIN);
             standard.addCategory(Intent.CATEGORY_LAUNCHER);
-            rawApps = pm.queryIntentActivities(standard, 0);
+            rawApps = pm.queryIntentActivities(standard, PackageManager.MATCH_DISABLED_COMPONENTS);
         }
 
         List<ResolveInfo> apps = (rawApps != null) ? new ArrayList<>(rawApps) : new ArrayList<>();
@@ -56,11 +56,20 @@ public class AppDiscovery {
     // Smart default: prioritize curated apps first, then fill remaining slots
     // with whatever else is installed, sorted alphabetically for determinism
     public static List<String> getDefaultDockSelection(Context ctx, int slotCount) {
+        PackageManager pm = ctx.getPackageManager();
         List<ResolveInfo> installed = getLeanbackApps(ctx);
-        Map<String, ResolveInfo> installedMap = new HashMap<>();
+        Set<String> installedPkgs = new HashSet<>();
         for (ResolveInfo ri : installed) {
             if (ri.activityInfo != null) {
-                installedMap.put(ri.activityInfo.packageName, ri);
+                installedPkgs.add(ri.activityInfo.packageName);
+            }
+        }
+        for (String curated : CURATED_PACKAGES) {
+            if (!installedPkgs.contains(curated)) {
+                try {
+                    pm.getApplicationInfo(curated, 0);
+                    installedPkgs.add(curated);
+                } catch (PackageManager.NameNotFoundException ignored) {}
             }
         }
 
@@ -68,13 +77,15 @@ public class AppDiscovery {
 
         // Pass 1: curated apps, in the order declared above
         for (String pkg : CURATED_PACKAGES) {
-            if (installedMap.containsKey(pkg) && result.size() < slotCount) {
-                result.add(pkg);
+            if (installedPkgs.contains(pkg) && result.size() < slotCount) {
+                if (!result.contains(pkg)) {
+                    result.add(pkg);
+                }
             }
         }
 
         // Pass 2: fill remaining slots with other installed apps
-        List<String> remaining = new ArrayList<>(installedMap.keySet());
+        List<String> remaining = new ArrayList<>(installedPkgs);
         remaining.removeAll(result);
         Collections.sort(remaining);
         for (String pkg : remaining) {

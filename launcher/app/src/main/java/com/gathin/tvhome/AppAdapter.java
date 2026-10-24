@@ -137,7 +137,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
 
         PackageManager pm = ctx.getPackageManager();
         Intent probe = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER);
-        List<ResolveInfo> found = pm.queryIntentActivities(probe, 0);
+        List<ResolveInfo> found = pm.queryIntentActivities(probe, PackageManager.MATCH_DISABLED_COMPONENTS);
 
         // Also query launch intents for configured dock apps (favourites) in case they declare standard launcher category
         Set<String> resolvedPkgs = new HashSet<>();
@@ -146,6 +146,16 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         }
         for (String favPkg : favourites) {
             if (!resolvedPkgs.contains(favPkg) && !hidden.contains(favPkg)) {
+                if ("com.mitv.tvhome.mitvplus".equals(favPkg)) {
+                    Intent mitvIntent = new Intent(Intent.ACTION_MAIN);
+                    mitvIntent.setComponent(new ComponentName("com.mitv.tvhome.mitvplus", "com.mitv.tvhome.mitvplus.app.BannerLogoFree"));
+                    ResolveInfo ri = pm.resolveActivity(mitvIntent, PackageManager.MATCH_DISABLED_COMPONENTS);
+                    if (ri != null && ri.activityInfo != null) {
+                        found.add(ri);
+                        resolvedPkgs.add(favPkg);
+                        continue;
+                    }
+                }
                 Intent li = pm.getLeanbackLaunchIntentForPackage(favPkg);
                 if (li == null) li = pm.getLaunchIntentForPackage(favPkg);
                 if (li != null) {
@@ -218,11 +228,22 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         if (art == null && pkg != null) {
             try {
                 PackageManager pm = ctx.getPackageManager();
+                if ("com.mitv.tvhome.mitvplus".equals(pkg)) {
+                    label = "Xiaomi TV+";
+                    Intent mitvIntent = new Intent(Intent.ACTION_MAIN)
+                            .setComponent(new ComponentName("com.mitv.tvhome.mitvplus", "com.mitv.tvhome.mitvplus.app.BannerLogoFree"));
+                    ResolveInfo ri = pm.resolveActivity(mitvIntent, PackageManager.MATCH_DISABLED_COMPONENTS);
+                    if (ri != null && ri.activityInfo != null) {
+                        art = ri.activityInfo.loadBanner(pm);
+                    }
+                }
                 ApplicationInfo ai = pm.getApplicationInfo(pkg, 0);
                 if (label == null || label.length() == 0) {
                     label = ai.loadLabel(pm);
                 }
-                art = ai.loadBanner(pm); // 16:9 TV artwork, preferred
+                if (art == null) {
+                    art = ai.loadBanner(pm); // 16:9 TV artwork, preferred
+                }
                 if (art == null && e.banner != null) {
                     art = e.banner;
                 }
