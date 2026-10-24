@@ -115,7 +115,9 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
     /** Never shown as tiles (res/values/config.xml, hidden_apps). */
     private final Set<String> hidden;
     private final boolean showHomeSettings;
+    private final List<Entry> allItems = new ArrayList<>();
     private final List<Entry> items = new ArrayList<>();
+    private boolean isExpanded = false;
 
     AppAdapter(Context ctx, TileListener listener, int dockSize, Config cfg) {
         this.ctx = ctx;
@@ -232,9 +234,39 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
                     new ComponentName(ctx, HomeSettingsActivity.class), null,
                     ctx.getDrawable(R.drawable.ic_home_settings), null, 0));
         }
+        allItems.clear();
+        allItems.addAll(fresh);
         items.clear();
-        items.addAll(fresh);
+        int max = isExpanded ? Math.min(dockSize * 2, allItems.size()) : Math.min(dockSize, allItems.size());
+        items.addAll(allItems.subList(0, max));
         notifyDataSetChanged();
+    }
+
+    public boolean isExpanded() {
+        return isExpanded;
+    }
+
+    public void setExpanded(boolean expanded) {
+        if (this.isExpanded == expanded) return;
+        this.isExpanded = expanded;
+        if (expanded) {
+            int start = items.size();
+            int end = Math.min(dockSize * 2, allItems.size());
+            if (end > start) {
+                for (int i = start; i < end; i++) {
+                    items.add(allItems.get(i));
+                }
+                notifyItemRangeInserted(start, end - start);
+            }
+        } else {
+            int count = items.size() - dockSize;
+            if (count > 0) {
+                while (items.size() > dockSize) {
+                    items.remove(items.size() - 1);
+                }
+                notifyItemRangeRemoved(dockSize, count);
+            }
+        }
     }
 
     private final Map<String, Drawable> artCache = new HashMap<>();

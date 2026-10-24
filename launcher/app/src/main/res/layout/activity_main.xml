@@ -307,6 +307,7 @@
 
             <!-- ROW 4: APPLE TV FLOATING GLASS DOCK (4 Main Apps + 4 Secondary on Down) -->
             <FrameLayout
+                android:id="@+id/dockContainer"
                 android:layout_width="match_parent"
                 android:layout_height="148dp"
                 android:clipChildren="true"

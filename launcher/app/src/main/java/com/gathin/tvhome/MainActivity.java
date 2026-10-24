@@ -1,5 +1,6 @@
 package com.gathin.tvhome;
 
+import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.Dialog;
@@ -1025,12 +1026,52 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         ambient.animate().alpha(0f).setDuration(300).start();
     }
 
-    // ---- navigation ------------------------------------------------------------------------------
+    // ---- navigation & collapsible dock -------------------------------------------------------------
+
+    private View dockContainer;
+    private ValueAnimator dockHeightAnimator;
+
+    private void animateDock(boolean expand, Runnable onEnd) {
+        if (dockContainer == null) {
+            dockContainer = findViewById(R.id.dockContainer);
+        }
+        if (dockContainer == null) {
+            if (onEnd != null) onEnd.run();
+            return;
+        }
+        float d = getResources().getDisplayMetrics().density;
+        int collapsedH = Math.round(148 * d);
+        int expandedH = Math.round(296 * d);
+
+        if (dockHeightAnimator != null && dockHeightAnimator.isRunning()) {
+            dockHeightAnimator.cancel();
+        }
+        int from = dockContainer.getHeight() > 0 ? dockContainer.getHeight() : (expand ? collapsedH : expandedH);
+        int to = expand ? expandedH : collapsedH;
+
+        dockHeightAnimator = ValueAnimator.ofInt(from, to);
+        dockHeightAnimator.setDuration(200);
+        dockHeightAnimator.setInterpolator(new android.view.animation.DecelerateInterpolator(1.5f));
+        dockHeightAnimator.addUpdateListener(anim -> {
+            int val = (int) anim.getAnimatedValue();
+            ViewGroup.LayoutParams lp = dockContainer.getLayoutParams();
+            if (lp != null) {
+                lp.height = val;
+                dockContainer.setLayoutParams(lp);
+            }
+        });
+        dockHeightAnimator.addListener(new android.animation.AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(android.animation.Animator animation) {
+                if (onEnd != null) onEnd.run();
+            }
+        });
+        dockHeightAnimator.start();
+    }
 
     @Override
     public boolean onTileVerticalKey(int position, int keyCode) {
         int count = adapter.getItemCount();
-        int target;
         // Horizontal: swallow the key at a row's ends so focus never wraps to the next row or
         // escapes up into the top bar. Mid-row moves fall through to the default focus search.
         if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT) {
@@ -1039,37 +1080,43 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
             return position % COLUMNS == COLUMNS - 1 || position == count - 1;
         }
-        int lastRowStart = ((count - 1) / COLUMNS) * COLUMNS;
-        int lastRowCount = count - lastRowStart;
-        if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
+
+        if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
             if (position < COLUMNS) {
+                // On Row 1: reveal Row 2 with upward slide & fade, then move focus to matching column
+                if (!adapter.isExpanded()) {
+                    adapter.setExpanded(true);
+                    animateDock(true, null);
+                }
+                int target = position + COLUMNS;
+                grid.post(() -> focusTile(target));
+                return true;
+            } else {
+                // On Row 2: Down does nothing so focus stays in the dock
+                return true;
+            }
+        }
+
+        if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
+            if (position >= COLUMNS) {
+                // On Row 2: Up returns focus to Row 1 and collapses Row 2
+                int target = position - COLUMNS;
+                focusTile(target);
+                animateDock(false, () -> adapter.setExpanded(false));
+                return true;
+            } else {
+                // On Row 1: Up moves focus to top buttons
+                if (adapter.isExpanded()) {
+                    animateDock(false, () -> adapter.setExpanded(false));
+                }
                 if (btnLiveTv != null) {
                     btnLiveTv.requestFocus();
                     return true;
                 }
                 return false;
             }
-            if (position >= lastRowStart && lastRowCount < COLUMNS) {
-                // Centered row going up: map upward intuitively based on visual position
-                int colInRow = position - lastRowStart;
-                int shiftCols = (COLUMNS - lastRowCount) / 2;
-                target = colInRow + shiftCols;
-            } else {
-                target = position - COLUMNS;
-            }
-        } else {
-            if (position >= lastRowStart) return true;     // already on the last row: stay put
-            if (lastRowCount < COLUMNS) {
-                int shiftCols = (COLUMNS - lastRowCount) / 2;
-                int colInRow = position - shiftCols;
-                colInRow = Math.max(0, Math.min(colInRow, lastRowCount - 1));
-                target = lastRowStart + colInRow;
-            } else {
-                target = Math.min(position + COLUMNS, count - 1);
-            }
         }
-        focusTile(target);
-        return true;
+        return false;
     }
 
     private void focusTile(int position) {
