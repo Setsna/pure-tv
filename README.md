@@ -1,137 +1,145 @@
 <p align="center">
-  <img src="docs/stock-vs-new-side.jpg" alt="MiVibe TV Launcher - Apple TV Experience on Xiaomi TVs" width="800" style="border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+  <img src="docs/puretv/home.jpg" alt="Pure TV home screen on a Xiaomi TV" width="860">
 </p>
 
-<h1 align="center">MiVibe TV</h1>
+<h1 align="center">Pure TV</h1>
+
 <p align="center">
-  <strong>The ultra-clean, Apple TV-inspired launcher built exclusively for Xiaomi Smart TVs.</strong><br>
-  Zero ads, zero background telemetry, luxury glass aesthetics, real-time Chanakyapuri weather intelligence, and a 1-minute plug-and-play setup that takes over as the native home screen while preserving 100% of your hardware features.
+  A calm, Apple TV–inspired home screen for Android TV and Google TV.<br>
+  No ads, no recommendation rows, no tracking. Installed from your computer in a few minutes, and fully reversible.
 </p>
 
 <p align="center">
-  <a href="release/CleanYourTV-v2.2.0.apk"><img src="https://img.shields.io/badge/Download_APK-v2.2.0_(901_KB)-brightgreen?style=for-the-badge&logo=android" alt="Download Release APK"></a>
-  <a href="ui-audit/UI_AUDIT_REPORT.md"><img src="https://img.shields.io/badge/UI_Audit-Verified_1080p-blueviolet?style=for-the-badge" alt="UI Audit Report"></a>
-  <img src="https://img.shields.io/badge/Android_TV-9_·_10_·_11_·_12-blue?style=for-the-badge&logo=google" alt="Android TV">
-  <img src="https://img.shields.io/badge/License-MIT-orange?style=for-the-badge" alt="MIT License">
+  <a href="https://github.com/Vardxn/pure-tv/releases/latest"><b>Download the latest release</b></a> ·
+  <a href="#install">Install</a> ·
+  <a href="#undo">Undo</a> ·
+  <a href="#credits">Credits</a>
 </p>
 
 ---
 
-> *"Tired of 30-second boot ads, sluggish memory hogs, and PatchWall banners on your Xiaomi TV? **MiVibe** transforms any Xiaomi Smart TV into a responsive, beautiful, ad-free Apple TV experience in under 2 minutes. No root required, no firmware flashing, 100% reversible, and built specifically to respect your hardware's 2 GB RAM."*
+## What you get
 
----
+- **A quiet home screen.** A photo backdrop, a large clock and the date, and your apps as full-colour tiles. Nothing else competes for attention.
+- **Weather that is actually useful.** The temperature, the next six hours, a warning when rain is likely in the next 24 hours, feels-like, humidity, wind and air quality. It refreshes each time you come back to Home, and never while you're watching something.
+- **Instant app switching.** Apps you were just using stay warm, so going back to YouTube or Hotstar takes about 0.2 s instead of a cold start of 0.7 s or more (measured on a Xiaomi MiTV-MOOR2).
+- **Your dock, your apps.** Press and hold any tile to swap in any app installed on the TV. On first launch the dock fills itself with the common apps it finds, and Settings and Play Store keep the last two slots.
+- **A screensaver worth looking at.** After five minutes of no remote presses (or press Back on Home), a glass dashboard shows the time, the weather, a quote of the day and the next festival. It drifts slightly every minute to protect the screen.
+- **Set-top box in one press.** The first press asks which HDMI input your box is on and remembers it.
 
-## ⚡ 1-Minute Plug-and-Play Setup
+<p align="center">
+  <img src="docs/puretv/screensaver.jpg" alt="Pure TV screensaver" width="420">
+  <img src="docs/puretv/dock-open.jpg" alt="Dock with both rows open" width="420">
+</p>
+<p align="center">
+  <img src="docs/puretv/dock-editor.jpg" alt="Choosing an app for a dock slot" width="420">
+</p>
 
-No manual ADB commands or developer setup headaches. Connect your computer to the same Wi-Fi as your TV and run the 1-click automated installer:
+## Before you start
 
-### macOS & Linux
+You need a computer (Mac, Windows or Linux) on the same Wi-Fi as the TV, and five minutes.
+
+On the TV:
+
+1. **Settings → Device Preferences → About**, select **Build** seven times until it says you are a developer.
+2. Go back to **Device Preferences → Developer options** and turn on **USB debugging** (and **Network debugging**, if your TV shows it).
+3. Note the TV's IP address from **Settings → Network & Internet** (it looks like `192.168.1.25`).
+
+Keep the TV on. The first time the installer connects, the TV asks **"Allow USB debugging?"**: tick **Always allow** and press **OK**.
+
+## Install
+
+### Option 1: let an AI assistant do it
+
+Open [Claude Code](https://claude.com/claude-code) (or another coding assistant that can run commands) and paste the prompt from [PROMPT.md](PROMPT.md). It finds your TV, runs the installer, and checks the result with screenshots from the TV.
+
+### Option 2: one command
+
+**macOS / Linux** (Terminal):
+
 ```bash
-git clone https://github.com/vardan/mivibe-tv.git
-cd mivibe-tv
-./tools/install_mivibe.sh
+curl -fsSL https://raw.githubusercontent.com/Vardxn/pure-tv/main/install.sh | bash -s -- 192.168.1.25
 ```
 
-### Windows (PowerShell)
+**Windows** (PowerShell):
+
 ```powershell
-git clone https://github.com/vardan/mivibe-tv.git
-cd mivibe-tv
-.\tools\install_mivibe.ps1
+irm https://raw.githubusercontent.com/Vardxn/pure-tv/main/install.ps1 -OutFile install.ps1; .\install.ps1 192.168.1.25
 ```
 
-The installer will:
-1. Automatically pair with your Xiaomi TV over Wi-Fi (`port 5555`).
-2. Safely back up your package configuration to `backups/`.
-3. Reversibly disable Xiaomi ad services, telemetry daemons, and PatchWall.
-4. Install the lightweight **MiVibe** release APK and register it as your default native home.
-5. Apply hardware animation scales (`0.5x`) and AOT ARM64 compilation for zero-stutter 60 fps navigation.
+Replace `192.168.1.25` with your TV's address. You need [Python 3](https://www.python.org/downloads/); the installer sets up everything else in a private folder (`~/.puretv`) and does not touch your system.
 
----
+The installer:
 
-## 💎 Feature Breakdown: What's In vs. What's Out
+1. Saves a backup of the TV's apps and settings to `~/PureTV-backups/`.
+2. Downloads the latest Pure TV release, installs it, and makes it your home screen.
+3. Asks before each optional extra below. Say no to any of them; you can run it again later.
 
-| Feature Category | Included & Optimized (In MiVibe) | Excluded & Permanently Removed (Out) |
-| :--- | :--- | :--- |
-| **Launcher UX** | Progressive 4+4 Apple TV Dock (4 primary apps + 4 secondary on D-pad Down), spring-animated focus lens (`GlassView`), minimalist negative space layout. | Stock Xiaomi PatchWall UI, large promotional banners, recommendation carousels, floating hero app titles. |
-| **Screensaver & Idle** | Custom Apple TV Weather + Time + Date HUD over rotating Apple MacBook/TV nature wallpapers with anti-burn-in Ken Burns pan and alternating corner protection. | The temporary `"Happy Birthday Papa"` countdown screen (fully retired). |
-| **Weather Engine** | High-legibility 2-Tier weather card: Live temp (`52sp`), conditions (`14sp`), Feels Like (`14sp`), AQI & rain forecast, + 4 hourly forecast columns (+3h/+6h/+12h) with Open-Meteo primary + `wttr.in` fallback. | Heavy multi-row widget cards, redundant header temperature text, font overlap. |
-| **Hardware & Inputs** | 100% preserved: Live TV tuner (`com.mitv.livetv`), HDMI switching (Airtel Set-Top Box on HDMI 2), Chromecast (`backdrop`), Miracast/AirPlay (`smartshare`), Google Assistant voice search (`katniss`), USB Media Player (`mediaexplorer`), Play Store auto-updates. | Xiaomi firmware auto-updater (`com.xiaomi.mitv.upgrade`) to prevent OS patches from overwriting your custom setup. |
-| **Performance & RAM** | 3-minute background app memory reaper (`killBackgroundProcesses` + GC), zero-window overdraw (`setBackgroundDrawable(null)`), AOT native ARM64 compilation (`speed`), 18 bloatware/ad packages disabled. | QR-code Wi-Fi sharing module (`QrUtils`, ZXing library — removed to shrink APK to **277 KB**). |
+You can also clone the repo and run `./install.sh <tv-ip>` (or `.\install.ps1 <tv-ip>`).
 
----
+### Optional extras, and what they can and can't do
 
-## 📺 Design & Architecture
+| Extra | What it does | What it can't do |
+|---|---|---|
+| **Remote Home button** (Xiaomi) | Makes the remote's Home/PatchWall button open Pure TV, through a small accessibility service that only listens for that button. | Nothing else on the remote changes. |
+| **Debloat** | Switches off preinstalled ad, tracking and promo apps, using a list tested on your TV model (from [`examples/`](examples/)). Switched off, not deleted: the TV's own Settings can turn them back on. | Only offered when there is a tested list for your model. |
+| **AdGuard DNS** | Blocks known ad and tracking servers for the whole TV: banner and tracker ads in many apps, some ads in recorded shows. | **It cannot remove YouTube ads**, which come from the same servers as the videos, or ads stitched into live streams such as live cricket. Rarely, a streaming app may refuse to play or sign in; undo turns it off. |
+| **SmartTube** | Installs [SmartTube](https://github.com/yuliskov/SmartTube), a free, open-source YouTube app for TVs with no ads and SponsorBlock. It sits next to the official YouTube app. | It is not made by Google; sign-in and features follow SmartTube's own releases. |
 
-### 1. Progressive 4+4 Apple TV Dock
-- **Primary Dock:** The 4 apps you actually watch (`Xiaomi TV+`, `JioHotstar`, `YouTube`, `Spotify`) rest on a 30dp translucent glass shelf (`rgba(255, 255, 255, 0.08)`).
-- **Secondary App Drawer:** Pressing **Down** on your remote slides up your utility and secondary streaming row (`Netflix`, `Prime Video`, `Miracast`, `USB Player`) with 0ms input lag.
-
-### 2. Dual-Tier Weather Intelligence Card
-- **Large 10-Foot Living Room Typography:** Current temperature displayed at **52sp** Outfit font with custom high/low and atmospheric stats (`Feels 28°`, `💧 67%`, `🍃 AQI 84 · Moderate`, `✓ No rain 24h`).
-- **Guaranteed Zero-Overlap Clearance:** Constrained with `layout_toEndOf="@+id/clockBlock"` and 36dp physical barrier margins. Never collides with clock numbers even under system accessibility font scaling.
-
-### 3. Xiaomi Hardware Remote Interceptor
-- Neutralizes the physical PatchWall button (scancode 401) and hardware OTT buttons via `HomeKeyService`, keeping you in your tranquil launcher instead of being dumped into sponsored ad feeds.
-
-### 4. Zero Memory Pressure (<45 MB PSS)
-- Xiaomi TVs typically operate with 2 GB RAM, easily choked by dormant background streaming apps. MiVibe runs a lightweight background reaper that terminates idle video decoders after 3 minutes, maintaining a steady 60 fps across the entire system.
-
----
-
-## 🔌 Hardware Preservation Matrix
-
-| Hardware Feature | Xiaomi Stock App Package | MiVibe Status |
-| :--- | :--- | :--- |
-| **Airtel DTH / STB** | `com.mitv.livetv` / `com.xiaomi.mitv.tvplayer` | ✅ **1-Click Direct Launch** from header pill or HDMI dropdown |
-| **HDMI 1 / 2 / 3 Ports** | Native Android TV Input Framework (TIF) | ✅ **Live Dropdown** with green connection status dots |
-| **Chromecast Built-in** | `com.google.android.apps.mediashell` | ✅ **100% Operational** (Cast from phone/laptop anytime) |
-| **Miracast / AirPlay** | `com.xiaomi.mitv.smartshare` | ✅ **Preserved** in Secondary App Drawer |
-| **Google Voice Assistant**| `com.google.android.katniss` | ✅ **Preserved** via microphone remote key |
-| **USB Media Player** | `com.xiaomi.mitv.mediaexplorer` | ✅ **Preserved** in Secondary App Drawer |
-| **Google Play Store** | `com.android.vending` | ✅ **Preserved** for app installs & background updates |
-
----
-
-## 🔄 100% Reversible: Instant Stock Restore
-
-If you ever decide to sell your TV or revert to factory stock PatchWall, simply run:
+## Undo
 
 ```bash
-./tools/restore_stock_tv.sh <TV_IP>:5555
+curl -fsSL https://raw.githubusercontent.com/Vardxn/pure-tv/main/install.sh | bash -s -- rollback 192.168.1.25
 ```
 
-This single command re-enables all original Xiaomi packages, restores stock animation scales, sets PatchWall back as the default home activity, and leaves your TV exactly as it was out of the box.
+(Windows: `.\install.ps1 rollback 192.168.1.25`.) Rollback reads the backup from your last install. It switches every app it turned off back on, restores your DNS and Home-button settings and your previous home screen, and offers to uninstall Pure TV and SmartTube.
 
----
+When you're done, switch **USB debugging** off again on the TV.
 
-## 📂 Repository Structure
+## Network and privacy
 
-```text
-mivibe-tv/
-├── launcher/                  # Core Android TV launcher source
-│   ├── app/src/main/          # Java architecture, XML layouts, Apple nature wallpapers
-│   └── build.gradle           # R8 minified build configuration (Release APK)
-├── release/                   # Pre-compiled standalone release APKs
-│   └── CleanYourTV-v2.2.0.apk # Verified 1080p release binary (901 KB)
-├── tools/
-│   ├── install_mivibe.sh      # 1-Click interactive setup script (Mac & Linux)
-│   ├── install_mivibe.ps1     # 1-Click interactive setup script (Windows)
-│   ├── tv_tune.sh             # 5-second RAM & animation maintenance harness
-│   └── restore_stock_tv.sh    # Instant 1-click factory restore script
-├── backups/                   # Package backup snapshots
-├── docs/                      # Screenshots, architecture diagrams, and design specs
-├── README.md                  # Comprehensive product guide & documentation
-└── LICENSE                    # MIT License
+Pure TV has no analytics, ads or accounts. It connects to:
+
+- **Open-Meteo** (`api.open-meteo.com`, `air-quality-api.open-meteo.com`): the weather and air quality, each time you return to Home.
+- **ipapi.co**: to find which city the TV is in, at most once a day. Not used when a location is pinned at build time.
+
+Both over HTTPS. The installer also talks to GitHub to download releases.
+
+## Tested on
+
+- **Xiaomi MiTV-MOOR2** (Google TV, Android 11). Everything above, including the measurements.
+
+It should work on most Android TV and Google TV sets running Android 8 or later (Xiaomi, TCL, Hisense, Sony, OnePlus and others), but those haven't been tested yet. If you try it on another TV, please open an issue with the model and what worked.
+
+## Build from source
+
+```bash
+cd launcher
+./gradlew assembleRelease     # JDK 17, Android SDK platform 34
 ```
 
-## 🎨 Wallpapers & Photography
+To pin the weather to one place (a TV that never moves), add a line to `launcher/local.properties`, which is never committed:
 
-Landscape wallpapers bundled with CleanYourTV are courtesy of talented photographers on Unsplash under royalty-free licenses:
-- **Johannes Plenio** ([unsplash.com/@jplenio](https://unsplash.com/@jplenio))
-- **Jonatan Pie** ([unsplash.com/@jonatanpie](https://unsplash.com/@jonatanpie))
+```
+weather.location=28.5983,77.1897,Chanakyapuri, New Delhi
+```
 
----
+Release builds sign with the key configured in `~/.gradle/gradle.properties` (`PURETV_STORE_FILE`, `PURETV_STORE_PASSWORD`, `PURETV_KEY_ALIAS`, `PURETV_KEY_PASSWORD`); without it they use the debug key. Install a build with `./install.sh install <tv-ip> --apk launcher/app/build/outputs/apk/release/app-release.apk`.
 
-## 📄 License
+Festival dates live in [`festivals.txt`](launcher/app/src/main/res/raw/festivals.txt) and quotes in [`quotes.txt`](launcher/app/src/main/res/raw/quotes.txt); festivals that follow the lunar calendar need next year's dates added each year.
 
-Distributed under the [MIT License](LICENSE). Built for owners of Xiaomi Smart TVs who want a calm, fast, ad-free television experience.
+## Credits
+
+Pure TV is built on **[cleanyourtv](https://github.com/Gathin23/cleanyourtv)** by [Gathin23](https://github.com/Gathin23) and its contributors: the original launcher, the debloat lists in `examples/`, and the network ADB tools in `tools/`. If you want a small, offline, no-network launcher, use theirs. Pure TV is a restyle with weather, a screensaver and an installer on top.
+
+Photographs, from [Unsplash](https://unsplash.com/license):
+
+- River valley: [Karsten Würth](https://unsplash.com/photos/7BjhtdogU3A)
+- Misty forest path: [Johannes Plenio](https://unsplash.com/@jplenio)
+- Northern lights canyon: [Jonatan Pie](https://unsplash.com/@jonatanpie)
+
+Weather and air quality from [Open-Meteo](https://open-meteo.com/) (CC BY 4.0).
+
+## License
+
+[MIT](LICENSE), like the project it is built on.
