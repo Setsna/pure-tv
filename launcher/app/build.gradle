@@ -13,13 +13,29 @@ android {
     compileSdk 34
 
     defaultConfig {
-        applicationId 'com.gathin.tvhome'
+        // Pure TV's own id, so it installs alongside (not over) the upstream cleanyourtv launcher.
+        // The Java package stays com.gathin.tvhome to keep the history with the original project.
+        applicationId 'dev.vardxn.puretv'
         minSdk 26
         targetSdk 34
-        versionCode 4
-        versionName '3.0.0'
+        versionCode 5
+        versionName '4.0.0'
         // Pinned weather location ("lat,lon,City"); empty = detect from the TV's internet connection.
         resValue 'string', 'weather_location', localProps.getProperty('weather.location', '')
+    }
+
+    // Release key lives outside the repo: set PURETV_STORE_FILE, PURETV_STORE_PASSWORD, PURETV_KEY_ALIAS
+    // and PURETV_KEY_PASSWORD in ~/.gradle/gradle.properties. Without them (anyone building from source)
+    // release builds fall back to the debug key so they still install.
+    signingConfigs {
+        release {
+            if (project.hasProperty('PURETV_STORE_FILE')) {
+                storeFile file(PURETV_STORE_FILE)
+                storePassword PURETV_STORE_PASSWORD
+                keyAlias PURETV_KEY_ALIAS
+                keyPassword PURETV_KEY_PASSWORD
+            }
+        }
     }
 
     buildTypes {
@@ -28,8 +44,7 @@ android {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            // Sideloaded over ADB, never published: sign with the debug key so it installs over a debug build.
-            signingConfig signingConfigs.debug
+            signingConfig project.hasProperty('PURETV_STORE_FILE') ? signingConfigs.release : signingConfigs.debug
         }
     }
 
