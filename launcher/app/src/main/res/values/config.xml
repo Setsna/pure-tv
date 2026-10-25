@@ -20,9 +20,6 @@
         <item>com.xiaomi.mitv.mediaexplorer</item>
     </string-array>
 
-    <!-- Secondary apps: empty to preserve dock order -->
-    <string-array name="secondary_apps">
-    </string-array>
 
     <!-- System packages hidden from tile grid (accessible via top bar or remote buttons) -->
     <string-array name="hidden_apps" translatable="false">

@@ -180,11 +180,7 @@ And please consider supporting [cleanyourtv](https://github.com/Gathin23/cleanyo
 
 Pure TV is built on **[cleanyourtv](https://github.com/Gathin23/cleanyourtv)** by [Gathin23](https://github.com/Gathin23) and its contributors: the original launcher, the debloat lists in `examples/`, and the network ADB tools in `tools/`. If you want a small, offline, no-network launcher, use theirs. Pure TV is a restyle with weather, a screensaver and an installer on top.
 
-Photographs, from [Unsplash](https://unsplash.com/license):
-
-- River valley: [Karsten Würth](https://unsplash.com/photos/7BjhtdogU3A)
-- Misty forest path: [Johannes Plenio](https://unsplash.com/@jplenio)
-- Northern lights canyon: [Jonatan Pie](https://unsplash.com/@jonatanpie)
+Wallpaper photograph: river valley by [Karsten Würth](https://unsplash.com/photos/7BjhtdogU3A) on [Unsplash](https://unsplash.com/license).
 
 Weather and air quality from [Open-Meteo](https://open-meteo.com/) (CC BY 4.0).
 

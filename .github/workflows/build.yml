@@ -1,0 +1,45 @@
+# Builds Pure TV, runs the unit tests and Android lint, and checks the installer scripts parse,
+# on every push to main and every pull request.
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  launcher:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: launcher
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: gradle
+      - name: Unit tests, lint, debug build
+        run: ./gradlew --no-daemon testDebugUnitTest lintRelease assembleDebug
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: reports
+          path: |
+            launcher/app/build/reports/
+            launcher/app/build/test-results/
+
+  installer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Installer parses and its dependencies install
+        run: |
+          bash -n install.sh
+          python -m pip install -q -r tools/requirements.txt
+          python -m py_compile tools/puretv.py tools/tv.py
+          python tools/puretv.py --help

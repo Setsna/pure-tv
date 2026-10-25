@@ -1,6 +1,7 @@
 # Festivals and holidays for the screensaver countdown: yyyy-MM-dd|Name, one per line.
 # Fixed-date holidays are exact. Festivals that follow the lunar calendar move every year:
 # check these against an official calendar and add next year's dates before they run out.
+# The 2026-27 lunar dates below were cross-checked against several panchang sites in October 2026.
 2026-11-08|Diwali
 2026-11-24|Guru Nanak Jayanti
 2026-12-25|Christmas

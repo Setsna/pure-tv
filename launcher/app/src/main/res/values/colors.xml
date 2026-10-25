@@ -2,17 +2,8 @@
 <resources>
     <!-- Night Palette — OLED Cinema / Midnight Glass -->
     <color name="night_bg">#090A0C</color>
-    <color name="night_bg_charcoal">#101114</color>
     <color name="night_glass_surface">#EE14161E</color>     <!-- rgba(20, 22, 30, 0.93) deep obsidian glass: zero haze -->
-    <color name="night_glass_control">#D6181A22</color>     <!-- rgba(24, 26, 34, 0.84) -->
-    <color name="night_glass_dock">#E614161E</color>        <!-- rgba(20, 22, 30, 0.90) neutral dock shelf -->
-    <color name="night_glass_elevated">#F01E212B</color>    <!-- rgba(30, 33, 43, 0.94) elevated charcoal -->
     <color name="night_glass_border">#2EFFFFFF</color>      <!-- rgba(255, 255, 255, 0.18) crisp subtle edge -->
-    <color name="night_text_primary">#FFFFFF</color>
-    <color name="night_text_secondary">#CBD5E1</color>
-    <color name="night_text_tertiary">#94A3B8</color>
-    <color name="night_focus_accent">#60A5FA</color>        <!-- Vibrant tvOS sky blue -->
-    <color name="night_warm_accent">#E2C799</color>
     <color name="text_primary">#FFFFFF</color>
     <color name="text_secondary">#CBD5E1</color>
     <color name="text_tertiary">#94A3B8</color>
@@ -26,30 +17,7 @@
     <color name="rain_blue">#7CC4FF</color>                   <!-- rain chance in the weather widget -->
     <color name="screensaver_scrim">#59000000</color>         <!-- dims the photo under the screensaver -->
     <color name="photo_text_shadow">#A6000000</color>
-    <color name="tile_surface_top">#F2262932</color>        <!-- dock tile gradient, a step lighter than the shelf -->
-    <color name="tile_surface_bottom">#F21B1D25</color>
-    <color name="accent_blue">#60A5FA</color>
     <color name="divider_subtle">#26FFFFFF</color>
-
-    <!-- Day Palette — retired: day and night share the night palette above to avoid daytime haze.
-         Kept only so old references still resolve; do not use for new UI. -->
-    <color name="day_bg">#090A0C</color>
-    <color name="day_glass_surface">#EE14161E</color>
-    <color name="day_glass_control">#D6181A22</color>
-    <color name="day_glass_dock">#E614161E</color>
-    <color name="day_glass_elevated">#B8FFFFFF</color>      <!-- rgba(255, 255, 255, 0.72) -->
-    <color name="day_glass_border">#1A191A1F</color>        <!-- rgba(25, 26, 31, 0.10) -->
-    <color name="day_text_primary">#191A1F</color>
-    <color name="day_text_secondary">#666973</color>
-    <color name="day_text_tertiary">#858792</color>
-    <color name="day_focus_accent">#3979C6</color>
-    <color name="day_warm_accent">#B79A63</color>
-
-    <!-- Backward compatibility aliases -->
-    <color name="obsidian_base">#090A0C</color>
-    <color name="obsidian_surface">#101114</color>
-    <color name="warm_ivory">#F5F5F7</color>
-    <color name="champagne_gold">#C9AE7D</color>
 
     <!-- Standard EPA AQI Category Scale -->
     <color name="aqi_green">#34C759</color>   <!-- 0-50 Good -->

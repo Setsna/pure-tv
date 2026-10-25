@@ -222,6 +222,10 @@ def cmd_install(args):
     tv.install(apk)
     state["installed"].append(PKG)
     save_state(state)
+    # Android counts the Wi-Fi network name as location, so this is what lets the Wi-Fi pill show it.
+    # (TVs have no GPS; the weather's place comes from the internet connection, not from this.)
+    for perm in ("ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"):
+        tv.sh(f"pm grant {PKG} android.permission.{perm}")
     # Compile ahead of time: the launcher starts and scrolls at full speed from the first run.
     say("Optimising for speed...")
     tv.sh(f"cmd package compile -m speed -f {PKG}", 300.0)
@@ -251,6 +255,9 @@ def cmd_install(args):
         services = ":".join(keep + [HOME_KEY_SERVICE])
         tv.sh(f"settings put secure enabled_accessibility_services {services}")
         tv.sh("settings put secure accessibility_enabled 1")
+        # Lets Pure TV switch its button service back on by itself if an update turns it off.
+        # Only granted when the viewer said yes here, so it never enables the service on its own otherwise.
+        tv.sh(f"pm grant {PKG} android.permission.WRITE_SECURE_SETTINGS")
         state["a11y_changed"] = True
         save_state(state)
         say("  done\n")
@@ -333,6 +340,7 @@ def cmd_rollback(args):
             tv.sh(f"settings put secure enabled_accessibility_services {before}")
         else:
             tv.sh("settings delete secure enabled_accessibility_services")
+        tv.sh(f"pm revoke {PKG} android.permission.WRITE_SECURE_SETTINGS")
         say("  removed the remote Home-button service")
 
     prev = state.get("previous_home")

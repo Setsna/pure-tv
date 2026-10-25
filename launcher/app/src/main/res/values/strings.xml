@@ -10,7 +10,6 @@
     <string name="not_connected">No device</string>
     <string name="live_tv">Live TV</string>
     <string name="tv_box">Set-top Box</string>
-    <string name="xiaomi_tv_plus">Xiaomi TV+</string>
     <string name="no_inputs">No inputs found</string>
     <string name="good_morning">Good morning</string>
     <string name="good_afternoon">Good afternoon</string>
@@ -48,10 +47,6 @@
     <string name="card_state_new">New</string>
     <string name="card_state_new_key">New key</string>
     <string name="card_state_new_label">New name</string>
-    <string name="wifi_qr">Wi-Fi QR</string>
-    <string name="wifi_qr_title">Wi-Fi Quick Connect</string>
-    <string name="wifi_qr_subtitle">Scan with your phone to connect instantly</string>
-    <string name="wifi_done">Done</string>
     <string name="dock_editor_title">Choose an app</string>
     <string name="dock_editor_subtitle">Replaces %1$s in your dock. Press and hold any dock tile to come back here.</string>
     <string name="dock_reset">Reset dock to recommended</string>

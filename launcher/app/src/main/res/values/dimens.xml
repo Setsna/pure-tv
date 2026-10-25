@@ -7,7 +7,6 @@
 
     <!-- Screen gutter shared by the top bar and the dock shelf so their edges line up. -->
     <dimen name="screen_gutter_h">56dp</dimen>
-    <dimen name="section_gap">24dp</dimen>
 
     <!-- Dock geometry: a row is the tile plus dock_row_pad_top above and dock_row_pad_bottom below;
          the bottom pad holds the focused app's name. Two rows stack with no extra gap. -->
