@@ -11,6 +11,7 @@
 
 <p align="center">
   <a href="https://github.com/Vardxn/pure-tv/releases/latest"><b>Download the latest release</b></a> ·
+  <a href="#screenshots">Screenshots</a> ·
   <a href="#install">Install</a> ·
   <a href="#undo">Undo</a> ·
   <a href="#credits">Credits</a> ·
@@ -32,13 +33,25 @@
 - **A screensaver worth looking at.** After five minutes of no remote presses (or press Back on Home), a glass dashboard shows the time, the weather and a quote of the day. It drifts slightly every minute to protect the screen.
 - **Set-top box in one press.** The first press asks which HDMI input your box is on and remembers it.
 
-<p align="center">
-  <img src="docs/puretv/screensaver.jpg" alt="Pure TV screensaver" width="420">
-  <img src="docs/puretv/dock-open.jpg" alt="Dock with both rows open" width="420">
-</p>
-<p align="center">
-  <img src="docs/puretv/dock-editor.jpg" alt="Choosing an app for a dock slot" width="420">
-</p>
+## Screenshots
+
+All taken on a Xiaomi MiTV-MOOR2 running Pure TV.
+
+**Home.** The clock mirrored by the weather, quick controls mirrored by the rain warning, and one glass strip with the next six hours, feels like, humidity, wind and air quality. The line under the weather shows when it was last updated.
+
+<p align="center"><img src="docs/puretv/home.jpg" alt="Pure TV home screen" width="860"></p>
+
+**Both dock rows.** Press Down to open the second row; the top of the screen fades away so the apps have the room.
+
+<p align="center"><img src="docs/puretv/dock-open.jpg" alt="Dock with both rows open" width="860"></p>
+
+**Dock editor.** Press and hold any tile to put any installed app in its place. Apps already in the dock are marked.
+
+<p align="center"><img src="docs/puretv/dock-editor.jpg" alt="Choosing an app for a dock slot" width="860"></p>
+
+**Screensaver.** After five minutes without a remote press (or press Back on Home): the time, a quote of the day, and the weather with the next hours and air quality.
+
+<p align="center"><img src="docs/puretv/screensaver.jpg" alt="Pure TV screensaver" width="860"></p>
 
 ## Install
 
