@@ -34,45 +34,55 @@ public class WallpaperHelper {
         return null;
     }
 
+    /** The decoded wallpaper, shared by Home, the dock editor and the system screensaver (one copy in RAM). */
+    private static Bitmap sWallpaper;
+
     public static void loadPermanentWallpaper(Context ctx, ImageView iv) {
         if (ctx == null || iv == null) return;
+        Bitmap cached = sWallpaper;
+        if (cached != null && !cached.isRecycled()) {
+            iv.setImageBitmap(cached);
+            return;
+        }
+        final Context app = ctx.getApplicationContext();
         new Thread(() -> {
-            File target = getWallpaperFile(ctx);
-
-            Bitmap bmp = null;
-            try {
-                DisplayMetrics dm = ctx.getResources().getDisplayMetrics();
-                BitmapFactory.Options opts = new BitmapFactory.Options();
-                if (target == null) {
-                    // No readable file on the TV (Android 11 blocks /sdcard for apps): use the bundled
-                    // photo so the home screen never falls back to a flat black backdrop.
-                    opts.inPreferredConfig = Bitmap.Config.RGB_565;
-                    bmp = BitmapFactory.decodeResource(ctx.getResources(), DEFAULT_WALLPAPER, opts);
-                    final Bitmap bundled = bmp;
-                    if (bundled != null) {
-                        new Handler(Looper.getMainLooper()).post(() -> iv.setImageBitmap(bundled));
-                    }
-                    return;
-                }
-                opts.inJustDecodeBounds = true;
-                BitmapFactory.decodeFile(target.getAbsolutePath(), opts);
-
-                int sample = 1;
-                int targetW = dm.widthPixels > 0 ? dm.widthPixels : 1920;
-                int targetH = dm.heightPixels > 0 ? dm.heightPixels : 1080;
-                while (opts.outWidth / (sample * 2) >= targetW && opts.outHeight / (sample * 2) >= targetH) {
-                    sample *= 2;
-                }
-                opts.inJustDecodeBounds = false;
-                opts.inSampleSize = sample;
-                opts.inPreferredConfig = Bitmap.Config.RGB_565; // High performance, 50% RAM
-                bmp = BitmapFactory.decodeFile(target.getAbsolutePath(), opts);
-            } catch (Throwable ignored) {}
-
-            final Bitmap finalBmp = bmp;
-            if (finalBmp != null) {
-                new Handler(Looper.getMainLooper()).post(() -> iv.setImageBitmap(finalBmp));
+            Bitmap bmp = decode(app);
+            if (bmp == null) return;
+            synchronized (WallpaperHelper.class) {
+                if (sWallpaper == null || sWallpaper.isRecycled()) sWallpaper = bmp;
             }
-        }).start();
+            final Bitmap shown = sWallpaper;
+            new Handler(Looper.getMainLooper()).post(() -> iv.setImageBitmap(shown));
+        }, "WallpaperDecode").start();
+    }
+
+    /**
+     * The wallpaper file from TV storage, or the bundled photo when none is readable (Android 11 blocks
+     * /sdcard for apps), decoded as RGB_565 (half the memory of ARGB; a photo has no transparency) and
+     * sampled down so it is no larger than needed to cover the screen.
+     */
+    private static Bitmap decode(Context ctx) {
+        try {
+            DisplayMetrics dm = ctx.getResources().getDisplayMetrics();
+            int targetW = dm.widthPixels > 0 ? dm.widthPixels : 1920;
+            int targetH = dm.heightPixels > 0 ? dm.heightPixels : 1080;
+            File target = getWallpaperFile(ctx);
+            BitmapFactory.Options opts = new BitmapFactory.Options();
+            opts.inJustDecodeBounds = true;
+            if (target != null) BitmapFactory.decodeFile(target.getAbsolutePath(), opts);
+            else BitmapFactory.decodeResource(ctx.getResources(), DEFAULT_WALLPAPER, opts);
+            int sample = 1;
+            while (opts.outWidth / (sample * 2) >= targetW && opts.outHeight / (sample * 2) >= targetH) {
+                sample *= 2;
+            }
+            opts.inJustDecodeBounds = false;
+            opts.inSampleSize = sample;
+            opts.inPreferredConfig = Bitmap.Config.RGB_565;
+            return target != null
+                    ? BitmapFactory.decodeFile(target.getAbsolutePath(), opts)
+                    : BitmapFactory.decodeResource(ctx.getResources(), DEFAULT_WALLPAPER, opts);
+        } catch (Throwable ignored) {
+            return null;
+        }
     }
 }

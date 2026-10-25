@@ -149,4 +149,19 @@ public class WeatherHelperTest {
         assertEquals("Unhealthy", WeatherHelper.aqiLabel(190));
         assertEquals("", WeatherHelper.aqiLabel(-1));
     }
+
+    @Test
+    public void updatedLabel_saysTodayYesterdayOrDate() throws Exception {
+        java.util.Locale en = java.util.Locale.US;
+        long now = delhi(25, 9, 45);
+        java.util.TimeZone saved = java.util.TimeZone.getDefault();
+        java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("Asia/Kolkata"));
+        try {
+            assertEquals("Updated 9:41 AM  ·  Open-Meteo", WeatherHelper.updatedLabel(delhi(25, 9, 41), now, en));
+            assertEquals("Updated yesterday, 11:30 PM  ·  Open-Meteo", WeatherHelper.updatedLabel(delhi(24, 23, 30), now, en));
+            assertEquals("Updated 22 Oct, 8:05 PM  ·  Open-Meteo", WeatherHelper.updatedLabel(delhi(22, 20, 5), now, en));
+        } finally {
+            java.util.TimeZone.setDefault(saved);
+        }
+    }
 }

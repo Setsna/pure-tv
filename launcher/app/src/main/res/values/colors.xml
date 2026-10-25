@@ -50,9 +50,6 @@
     <color name="obsidian_surface">#101114</color>
     <color name="warm_ivory">#F5F5F7</color>
     <color name="champagne_gold">#C9AE7D</color>
-    <color name="weather_glass_tint">#C71F2025</color>
-    <color name="weather_glass_tint_strong">#E02B2C33</color>
-    <color name="weather_glass_edge">#1FFFFFFF</color>
 
     <!-- Standard EPA AQI Category Scale -->
     <color name="aqi_green">#34C759</color>   <!-- 0-50 Good -->

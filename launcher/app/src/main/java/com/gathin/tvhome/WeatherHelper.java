@@ -47,6 +47,8 @@ public class WeatherHelper {
         public Hourly[] hourly = new Hourly[0];
         /** US AQI, or -1 when unknown. */
         public int aqi = -1;
+        /** When this forecast was downloaded (not when it was shown); 0 if unknown. */
+        public long fetchedAtMs;
 
         // Also read by the screensaver and the full weather screen
         public double tempC;
@@ -189,6 +191,30 @@ public class WeatherHelper {
         return "Clear";
     }
 
+    /** Older than this, the "Updated" line is shown as stale (no fresh data, e.g. while offline). */
+    public static final long STALE_AFTER_MS = 2 * 3600_000L;
+
+    /** "Updated 9:41 AM", "Updated yesterday, 9:41 PM" or "Updated 22 Oct, 9:41 PM", plus the source. */
+    public static String updatedLabel(long fetchedAtMs, long nowMs, Locale locale) {
+        java.util.Calendar at = java.util.Calendar.getInstance();
+        at.setTimeInMillis(fetchedAtMs);
+        java.util.Calendar now = java.util.Calendar.getInstance();
+        now.setTimeInMillis(nowMs);
+        String time = new SimpleDateFormat("h:mm a", locale).format(at.getTime()).toUpperCase(locale);
+        String when;
+        if (at.get(java.util.Calendar.YEAR) == now.get(java.util.Calendar.YEAR)
+                && at.get(java.util.Calendar.DAY_OF_YEAR) == now.get(java.util.Calendar.DAY_OF_YEAR)) {
+            when = time;
+        } else {
+            java.util.Calendar yesterday = (java.util.Calendar) now.clone();
+            yesterday.add(java.util.Calendar.DAY_OF_YEAR, -1);
+            boolean isYesterday = at.get(java.util.Calendar.YEAR) == yesterday.get(java.util.Calendar.YEAR)
+                    && at.get(java.util.Calendar.DAY_OF_YEAR) == yesterday.get(java.util.Calendar.DAY_OF_YEAR);
+            when = (isYesterday ? "yesterday" : new SimpleDateFormat("d MMM", locale).format(at.getTime())) + ", " + time;
+        }
+        return "Updated " + when + "  ·  Open-Meteo";
+    }
+
     /** US AQI category name. */
     public static String aqiLabel(int aqi) {
         if (aqi < 0) return "";
@@ -222,7 +248,9 @@ public class WeatherHelper {
         // 1. Fresh cache for this location: no network at all
         if (!alwaysRefresh && cachedPayload != null && (System.currentTimeMillis() - cachedAt) < CACHE_TTL_MS) {
             try {
-                cb.onResult(WeatherData.fromJson(new JSONObject(cachedPayload)));
+                WeatherData cached = WeatherData.fromJson(new JSONObject(cachedPayload));
+                cached.fetchedAtMs = cachedAt;
+                cb.onResult(cached);
                 return;
             } catch (Exception ignored) { /* fall through to network */ }
         }
@@ -230,7 +258,9 @@ public class WeatherHelper {
         // 2. Stale cache: show it now so the widget is never blank, then refresh
         if (cachedPayload != null) {
             try {
-                cb.onResult(WeatherData.fromJson(new JSONObject(cachedPayload)));
+                WeatherData cached = WeatherData.fromJson(new JSONObject(cachedPayload));
+                cached.fetchedAtMs = cachedAt;
+                cb.onResult(cached);
             } catch (Exception ignored) {}
         }
 
@@ -253,6 +283,7 @@ public class WeatherHelper {
                     // Air quality is a nice-to-have; the forecast stands on its own.
                 }
                 WeatherData data = WeatherData.fromJson(json);
+                data.fetchedAtMs = System.currentTimeMillis();
                 prefs.edit()
                      .putString(KEY_PAYLOAD, json.toString())
                      .putString(KEY_LOCATION, locationKey)

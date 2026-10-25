@@ -218,17 +218,21 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
                 remaining.add(e.getValue());
             }
         }
-        remaining.sort((a, b) -> String.valueOf(a.loadLabel(pm)).compareToIgnoreCase(String.valueOf(b.loadLabel(pm))));
+        // Only enough apps to fill the two dock rows are ever shown, so stop there, read each label once
+        // (not on every sort comparison), and leave artwork to bindTile: loading a banner and icon for
+        // every installed app made cold start slow and held images nobody saw.
+        Map<ResolveInfo, String> labels = new HashMap<>();
+        for (ResolveInfo ri : remaining) labels.put(ri, String.valueOf(ri.loadLabel(pm)));
+        remaining.sort((a, b) -> labels.get(a).compareToIgnoreCase(labels.get(b)));
+        int room = dockSize * 2 - fresh.size();
         for (ResolveInfo ri : remaining) {
+            if (room <= 0) break;
             String pkg = ri.activityInfo.packageName;
             if (addedPkgs.contains(pkg)) continue;
-            ComponentName component = new ComponentName(pkg, ri.activityInfo.name);
-            Drawable banner = ri.activityInfo.loadBanner(pm);
-            if (banner == null) banner = ri.activityInfo.applicationInfo.loadBanner(pm);
-            Drawable icon = ri.loadIcon(pm);
-            String label = String.valueOf(ri.loadLabel(pm));
-            fresh.add(new Entry(label, component, banner, icon));
+            if (!ri.activityInfo.applicationInfo.enabled || !ri.activityInfo.enabled) continue;
+            fresh.add(new Entry(labels.get(ri), new ComponentName(pkg, ri.activityInfo.name), null, null));
             addedPkgs.add(pkg);
+            room--;
         }
 
         // Optional "Default home" tile (config.xml), only when this TV actually has a home-screen picker.

@@ -828,6 +828,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                .append(Math.round(data.daily[0].minC)).append('°');
         }
         tvTodayCondition.setText(sub);
+        showUpdated(findViewById(R.id.tvWeatherUpdated), data.fetchedAtMs);
         tvTodayCondition.setCompoundDrawablesRelativeWithIntrinsicBounds(
                 city.isEmpty() ? 0 : R.drawable.ic_location_arrow, 0, 0, 0);
         tvTodayCondition.setCompoundDrawableTintList(
@@ -897,6 +898,20 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (code <= 67 || (code >= 80 && code <= 82)) return R.drawable.ic_rain;
         if (code >= 95) return R.drawable.ic_storm;
         return R.drawable.ic_cloudy;
+    }
+
+    /** "Updated 9:41 AM · Open-Meteo" under the weather; orange when the data is over two hours old. */
+    static void showUpdated(TextView view, long fetchedAtMs) {
+        if (view == null) return;
+        if (fetchedAtMs <= 0) {
+            view.setVisibility(View.GONE);
+            return;
+        }
+        long now = System.currentTimeMillis();
+        view.setText(WeatherHelper.updatedLabel(fetchedAtMs, now, Locale.getDefault()));
+        boolean stale = now - fetchedAtMs > WeatherHelper.STALE_AFTER_MS;
+        view.setTextColor(view.getContext().getColor(stale ? R.color.aqi_orange : R.color.text_tertiary));
+        view.setVisibility(View.VISIBLE);
     }
 
     private int aqiColor(int aqi) {

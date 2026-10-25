@@ -125,6 +125,7 @@ final class ScreensaverDashboard {
         }
         rain.setTextColor(rainColor);
         rain.setCompoundDrawableTintList(ColorStateList.valueOf(rainColor));
+        MainActivity.showUpdated(activity.findViewById(R.id.ssUpdated), data.fetchedAtMs);
 
         hourly.removeAllViews();
         for (WeatherHelper.WeatherData.Hourly h : data.upcomingHours(now, 5)) {

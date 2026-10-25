@@ -159,6 +159,16 @@
                         android:fontFamily="@font/outfit"
                         android:fontVariationSettings="'wght' 500"
                         android:letterSpacing="0.01" />
+
+                    <TextView
+                        android:id="@+id/tvWeatherUpdated"
+                        style="@style/OnPhotoText"
+                        android:layout_marginTop="6dp"
+                        android:textColor="@color/text_tertiary"
+                        android:textSize="11.5sp"
+                        android:fontFamily="@font/outfit"
+                        android:fontVariationSettings="'wght' 500"
+                        android:letterSpacing="0.02" />
                 </LinearLayout>
             </LinearLayout>
 
@@ -619,6 +629,18 @@
                         android:includeFontPadding="false"
                         android:singleLine="true"
                         android:textSize="14sp"
+                        android:fontFamily="@font/outfit"
+                        android:fontVariationSettings="'wght' 500" />
+
+                    <TextView
+                        android:id="@+id/ssUpdated"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:includeFontPadding="false"
+                        android:singleLine="true"
+                        android:textColor="@color/text_tertiary"
+                        android:textSize="11.5sp"
                         android:fontFamily="@font/outfit"
                         android:fontVariationSettings="'wght' 500" />
                 </LinearLayout>
