@@ -59,7 +59,4 @@
     <string name="stat_wind">Wind</string>
     <string name="stat_air">Air quality</string>
     <string name="ss_next_hours">Next hours</string>
-    <string name="ss_festival_today">Today · %1$s</string>
-    <string name="ss_festival_tomorrow">Tomorrow · %1$s</string>
-    <string name="ss_festival_in_days">%1$s · in %2$d days</string>
 </resources>

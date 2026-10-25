@@ -19,19 +19,16 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
-import java.util.concurrent.TimeUnit;
 
 /**
- * The screensaver's glass dashboard: clock and date (TextClocks tick on their own), a quote of the
- * day and the next festival on the left, weather cards on the right. It only shows the forecast Home
+ * The screensaver's glass dashboard: clock and date (TextClocks tick on their own) and a quote of the
+ * day on the left, weather cards on the right. It only shows the forecast Home
  * last fetched ({@link #render}); it never fetches anything itself. While visible, the whole dashboard
  * drifts a few pixels each minute so nothing sits on the same pixels for hours.
  */
 final class ScreensaverDashboard {
 
     private static final long DRIFT_MS = 60_000L;
-    /** Festivals further away than this aren't worth a countdown yet. */
-    private static final int FESTIVAL_HORIZON_DAYS = 45;
 
     private final Activity activity;
     private final View hud;
@@ -40,7 +37,7 @@ final class ScreensaverDashboard {
     private final TextView temp, desc, highLow, location, rain;
     private final LinearLayout hourly;
     private final TextView feels, humidity, wind, aqi, aqiLabel;
-    private final TextView quote, quoteBy, festival;
+    private final TextView quote, quoteBy;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Random random = new Random();
     private final float density;
@@ -76,13 +73,11 @@ final class ScreensaverDashboard {
         aqiLabel = activity.findViewById(R.id.ssAqiLabel);
         quote = activity.findViewById(R.id.ssQuote);
         quoteBy = activity.findViewById(R.id.ssQuoteBy);
-        festival = activity.findViewById(R.id.ssFestival);
     }
 
-    /** Screensaver shown: today's quote and festival, start drifting. */
+    /** Screensaver shown: today's quote, start drifting. */
     void onShow() {
         showQuote();
-        showFestival();
         handler.removeCallbacks(drift);
         handler.postDelayed(drift, DRIFT_MS);
     }
@@ -166,39 +161,6 @@ final class ScreensaverDashboard {
         String[] q = quotes.get(Calendar.getInstance().get(Calendar.DAY_OF_YEAR) % quotes.size());
         quote.setText("“" + q[0] + "”");
         quoteBy.setText(q[1]);
-    }
-
-    private void showFestival() {
-        String text = nextFestivalText(readPairs(R.raw.festivals), Calendar.getInstance());
-        festival.setText(text);
-        festival.setVisibility(text == null ? View.GONE : View.VISIBLE);
-    }
-
-    /** "Today · Diwali", "Tomorrow · Diwali" or "Diwali · in 15 days" for the next festival, or null. */
-    private String nextFestivalText(List<String[]> festivals, Calendar today) {
-        SimpleDateFormat iso = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
-        Calendar day = (Calendar) today.clone();
-        day.set(Calendar.HOUR_OF_DAY, 0);
-        day.set(Calendar.MINUTE, 0);
-        day.set(Calendar.SECOND, 0);
-        day.set(Calendar.MILLISECOND, 0);
-        String best = null;
-        long bestDays = Long.MAX_VALUE;
-        for (String[] f : festivals) {
-            try {
-                Date d = iso.parse(f[0]);
-                long days = Math.round((d.getTime() - day.getTimeInMillis()) / (double) TimeUnit.DAYS.toMillis(1));
-                if (days >= 0 && days <= FESTIVAL_HORIZON_DAYS && days < bestDays) {
-                    bestDays = days;
-                    best = f[1];
-                }
-            } catch (Exception ignored) {
-            }
-        }
-        if (best == null) return null;
-        if (bestDays == 0) return activity.getString(R.string.ss_festival_today, best);
-        if (bestDays == 1) return activity.getString(R.string.ss_festival_tomorrow, best);
-        return activity.getString(R.string.ss_festival_in_days, best, (int) bestDays);
     }
 
     /** "a|b" lines from a raw resource; blank lines and # comments skipped. */

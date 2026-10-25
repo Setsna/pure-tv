@@ -29,7 +29,7 @@
 - **Weather that is actually useful.** The temperature, the next six hours, a warning when rain is likely in the next 24 hours, feels-like, humidity, wind and air quality. It refreshes each time you come back to Home, and never while you're watching something.
 - **Instant app switching.** Apps you were just using stay warm, so going back to YouTube or Hotstar takes about 0.2 s instead of a cold start of 0.7 s or more (measured on a Xiaomi MiTV-MOOR2).
 - **Your dock, your apps.** Press and hold any tile to swap in any app installed on the TV. On first launch the dock fills itself with the common apps it finds, and Settings and Play Store keep the last two slots.
-- **A screensaver worth looking at.** After five minutes of no remote presses (or press Back on Home), a glass dashboard shows the time, the weather, a quote of the day and the next festival. It drifts slightly every minute to protect the screen.
+- **A screensaver worth looking at.** After five minutes of no remote presses (or press Back on Home), a glass dashboard shows the time, the weather and a quote of the day. It drifts slightly every minute to protect the screen.
 - **Set-top box in one press.** The first press asks which HDMI input your box is on and remembers it.
 
 <p align="center">
@@ -160,7 +160,7 @@ weather.location=19.0760,72.8777,Mumbai
 
 Release builds sign with the key configured in `~/.gradle/gradle.properties` (`PURETV_STORE_FILE`, `PURETV_STORE_PASSWORD`, `PURETV_KEY_ALIAS`, `PURETV_KEY_PASSWORD`); without it they use the debug key. Install a build with `./install.sh install <tv-ip> --apk launcher/app/build/outputs/apk/release/app-release.apk`.
 
-Festival dates live in [`festivals.txt`](launcher/app/src/main/res/raw/festivals.txt) and quotes in [`quotes.txt`](launcher/app/src/main/res/raw/quotes.txt); festivals that follow the lunar calendar need next year's dates added each year.
+Screensaver quotes live in [`quotes.txt`](launcher/app/src/main/res/raw/quotes.txt).
 
 ## Support my work
 
