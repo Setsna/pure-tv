@@ -900,7 +900,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         return R.drawable.ic_cloudy;
     }
 
-    /** "Updated 9:41 AM · Open-Meteo" under the weather; orange when the data is over two hours old. */
+    /** "Updated 9:41 AM" under the weather; orange when the data is over two hours old. */
     static void showUpdated(TextView view, long fetchedAtMs) {
         if (view == null) return;
         if (fetchedAtMs <= 0) {

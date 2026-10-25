@@ -194,7 +194,7 @@ public class WeatherHelper {
     /** Older than this, the "Updated" line is shown as stale (no fresh data, e.g. while offline). */
     public static final long STALE_AFTER_MS = 2 * 3600_000L;
 
-    /** "Updated 9:41 AM", "Updated yesterday, 9:41 PM" or "Updated 22 Oct, 9:41 PM", plus the source. */
+    /** "Updated 9:41 AM", "Updated yesterday, 9:41 PM" or "Updated 22 Oct, 9:41 PM". */
     public static String updatedLabel(long fetchedAtMs, long nowMs, Locale locale) {
         java.util.Calendar at = java.util.Calendar.getInstance();
         at.setTimeInMillis(fetchedAtMs);
@@ -212,7 +212,7 @@ public class WeatherHelper {
                     && at.get(java.util.Calendar.DAY_OF_YEAR) == yesterday.get(java.util.Calendar.DAY_OF_YEAR);
             when = (isYesterday ? "yesterday" : new SimpleDateFormat("d MMM", locale).format(at.getTime())) + ", " + time;
         }
-        return "Updated " + when + "  ·  Open-Meteo";
+        return "Updated " + when;
     }
 
     /** US AQI category name. */
