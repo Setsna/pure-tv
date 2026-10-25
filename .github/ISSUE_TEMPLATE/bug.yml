@@ -1,0 +1,26 @@
+name: 🐞 Something's wrong
+description: A bug in the home screen, the installer or rollback.
+labels: ["bug"]
+body:
+  - type: input
+    id: model
+    attributes:
+      label: TV brand, model and Android version
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Pure TV version
+      description: Shown under the release you installed, e.g. 4.0.4.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: "1. Press Home\n2. Press Down twice\n3. ..."

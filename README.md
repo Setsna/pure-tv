@@ -1,41 +1,63 @@
-<p align="center">
-  <img src="docs/puretv/home.jpg" alt="Pure TV home screen on a Xiaomi TV" width="860">
-</p>
-
-<h1 align="center">Pure TV</h1>
+<h1 align="center">📺 Pure TV</h1>
 
 <p align="center">
-  A calm, Apple TV–inspired home screen for Android TV and Google TV.<br>
-  No ads, no recommendation rows, no tracking. Installed from your computer in a few minutes, and fully reversible.
+  <b>An ad-free, Apple TV–style home screen for Android TV and Google TV.</b><br>
+  Free and open source. Installs from your computer in about 10 minutes, and every change can be undone.
 </p>
 
 <p align="center">
-  <a href="https://github.com/Vardxn/pure-tv/releases/latest"><b>Download the latest release</b></a> ·
-  <a href="#screenshots">Screenshots</a> ·
-  <a href="#install">Install</a> ·
-  <a href="#undo">Undo</a> ·
-  <a href="#credits">Credits</a> ·
-  <a href="#support-my-work">Support</a>
+  <a href="https://github.com/Vardxn/pure-tv/releases/latest"><img src="https://img.shields.io/github/v/release/Vardxn/pure-tv?style=for-the-badge&label=latest&color=34C759" alt="Latest release"></a>
+  <a href="https://github.com/Vardxn/pure-tv/releases"><img src="https://img.shields.io/github/downloads/Vardxn/pure-tv/total?style=for-the-badge&color=0A84FF" alt="Downloads"></a>
+  <a href="https://github.com/Vardxn/pure-tv/actions/workflows/build.yml"><img src="https://img.shields.io/github/actions/workflow/status/Vardxn/pure-tv/build.yml?branch=main&style=for-the-badge&label=build" alt="Build"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/Vardxn/pure-tv?style=for-the-badge&color=8E8E93" alt="MIT licence"></a>
 </p>
 
 <p align="center">
+  <img src="docs/puretv/home.jpg" alt="Pure TV home screen" width="900">
+</p>
+
+<p align="center">
+  <a href="#install"><img src="https://img.shields.io/badge/Install_in_10_minutes-34C759?style=for-the-badge" alt="Install"></a>
+  <a href="#screenshots"><img src="https://img.shields.io/badge/Screenshots-1C1C1E?style=for-the-badge" alt="Screenshots"></a>
+  <a href="docs/puretv/pure-tv-overview.pdf"><img src="https://img.shields.io/badge/Overview_deck_(PDF)-1C1C1E?style=for-the-badge" alt="Overview deck"></a>
   <a href="https://www.buymeacoffee.com/Vardxn"><img src="https://img.shields.io/badge/Buy_me_a_coffee-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black" alt="Buy me a coffee"></a>
 </p>
 
 ---
 
-## What you get
+## ✨ Why people install it
 
-- **A quiet home screen.** A photo backdrop, a large clock and the date, and your apps as full-colour tiles. Nothing else competes for attention.
-- **Weather that is actually useful.** The temperature, the next six hours, a warning when rain is likely in the next 24 hours, feels-like, humidity, wind and air quality. It refreshes each time you come back to Home, and never while you're watching something.
-- **Instant app switching.** Apps you were just using stay warm, so going back to YouTube or Hotstar takes about 0.2 s instead of a cold start of 0.7 s or more (measured on a Xiaomi MiTV-MOOR2).
-- **Your dock, your apps.** Press and hold any tile to swap in any app installed on the TV. On first launch the dock fills itself with the common apps it finds, and Settings and Play Store keep the last two slots.
-- **A screensaver worth looking at.** After five minutes of no remote presses (or press Back on Home), a glass dashboard shows the time, the weather and a quote of the day. It drifts slightly every minute to protect the screen.
-- **Set-top box in one press.** The first press asks which HDMI input your box is on and remembers it.
+<table>
+  <tr>
+    <td width="33%" valign="top"><h3>🚫 No ads</h3>No promoted rows, sponsored banners or trailers playing on their own. Just your apps on a calm photo.</td>
+    <td width="33%" valign="top"><h3>⚡ Fast</h3>Opens in about 0.75 s. Apps you were just using stay warm, so switching back takes about 0.2 s.</td>
+    <td width="33%" valign="top"><h3>🌤️ Useful weather</h3>The next six hours, a 24-hour rain warning, feels like, humidity, wind and air quality.</td>
+  </tr>
+  <tr>
+    <td valign="top"><h3>🎛️ Your dock</h3>Press and hold any tile to swap in any app. Full-colour tiles for every app on your TV.</td>
+    <td valign="top"><h3>🌙 Calm screensaver</h3>After five idle minutes: the time, a quote of the day and the weather, gently drifting to protect the screen.</td>
+    <td valign="top"><h3>↩️ Fully reversible</h3>The installer backs up your TV first. One command puts everything back the way it was.</td>
+  </tr>
+</table>
 
-## Screenshots
+## 🔄 From cluttered to calm
 
-All taken on a Xiaomi MiTV-MOOR2 running Pure TV.
+<p align="center"><img src="docs/puretv/before-after.jpg" alt="Before and after Pure TV" width="560"></p>
+
+## 🚀 Fast on an everyday TV
+
+Measured on a real TV with 1.8 GB of RAM. The biggest win was a hidden one: every piece of text was rebuilding its own copy of the font, freezing the screen for 290 ms whenever the weather updated. Fixed-weight fonts brought that to 30 ms.
+
+<p align="center"><img src="docs/puretv/numbers.jpg" alt="Cold start 0.75 s, app switch 0.2 s, weather update 30 ms, screen build 130 ms" width="560"></p>
+
+## 🛡️ Ads, handled
+
+The home screen is ad-free out of the box. The installer can also turn on ad blocking across your apps and install an ad-free YouTube app, if you want them. [What each option can and can't do](#optional-extras-and-what-they-can-and-cant-do).
+
+<p align="center"><img src="docs/puretv/ads.jpg" alt="Built-in ad-free home, optional ad blocking, optional ad-free YouTube" width="560"></p>
+
+<a id="screenshots"></a>
+## 📸 Screenshots
 
 **Home.** The clock mirrored by the weather, quick controls mirrored by the rain warning, and one glass strip with the next six hours, feels like, humidity, wind and air quality. The line under the weather shows when it was last updated.
 
@@ -52,6 +74,8 @@ All taken on a Xiaomi MiTV-MOOR2 running Pure TV.
 **Screensaver.** After five minutes without a remote press (or press Back on Home): the time, a quote of the day, and the weather with the next hours and air quality.
 
 <p align="center"><img src="docs/puretv/screensaver.jpg" alt="Pure TV screensaver" width="860"></p>
+
+**Set-top box in one press.** The first press asks which HDMI input your box is on and remembers it.
 
 ## Install
 
@@ -122,7 +146,7 @@ Press **Home** on the remote. Then go back to **Developer options** and switch *
 
 **Prefer to have AI do it?** Open [Claude Code](https://claude.com/claude-code) (or another coding assistant that can run commands), paste the prompt from [PROMPT.md](PROMPT.md), and it will do steps 5 to 7 with you.
 
-**Something not working?** The installer explains what to check. If it still fails, [open an issue](https://github.com/Vardxn/pure-tv/issues) with your TV model and the message you saw.
+**Something not working?** The installer explains what to check, and [Troubleshooting](docs/TROUBLESHOOTING.md) covers the common snags (macOS blocking `adb`, TVs without a wireless-debugging switch, Windows quirks). Still stuck? [Open an issue](https://github.com/Vardxn/pure-tv/issues/new/choose) with your TV model and the message you saw.
 
 ### Optional extras, and what they can and can't do
 
@@ -142,6 +166,18 @@ curl -fsSL https://raw.githubusercontent.com/Vardxn/pure-tv/main/install.sh | ba
 (Windows: `.\install.ps1 rollback 192.168.1.25`.) Rollback reads the backup from your last install. It switches every app it turned off back on, restores your DNS and Home-button settings and your previous home screen, and offers to uninstall Pure TV and SmartTube.
 
 When you're done, switch **USB debugging** off again on the TV.
+
+## FAQ
+
+**Will it work on my TV?** If your TV runs Android TV or Google TV on Android 8 or later (most Xiaomi, TCL, Hisense, Sony, OnePlus, Realme and Philips sets), yes. Samsung, LG and Fire TV use other systems and can't run it.
+
+**Can I lose anything?** No. Nothing is deleted from your TV: apps the installer switches off can be switched back on from the TV's own Settings, and `rollback` undoes every change, including making your old home screen the default again.
+
+**Does it block YouTube and Hotstar ads?** The home screen has no ads at all. Optional AdGuard DNS blocks ad and tracking servers in many apps, and optional SmartTube gives you ad-free YouTube. Ads stitched into live streams, like live cricket, can't be blocked by any app.
+
+**Is it safe?** The code is open, there are no accounts, ads or analytics, and every release is signed and built by CI. The only network calls are listed below.
+
+**Do I need to keep my computer connected?** Only during the install. Afterwards, switch USB debugging off on the TV.
 
 ## Network and privacy
 

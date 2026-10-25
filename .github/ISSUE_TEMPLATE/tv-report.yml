@@ -1,0 +1,35 @@
+name: 📺 TV report
+description: Tell us how Pure TV ran on your TV (worked or not, both help).
+title: "TV report: <brand> <model>"
+labels: ["tv-report"]
+body:
+  - type: input
+    id: model
+    attributes:
+      label: TV brand and model
+      description: The installer's `probe` command prints it, e.g. `./install.sh probe 192.168.1.25`.
+      placeholder: TCL 55C725
+    validations:
+      required: true
+  - type: input
+    id: android
+    attributes:
+      label: Android version
+      placeholder: Android 11 (Google TV)
+    validations:
+      required: true
+  - type: dropdown
+    id: result
+    attributes:
+      label: How did it go?
+      options:
+        - Everything worked
+        - Installed, but something looks or works wrong
+        - The installer failed
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: What worked, what didn't, any message the installer showed. A photo or screenshot of the TV helps a lot.
