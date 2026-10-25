@@ -94,14 +94,11 @@ final class TileArt extends Drawable {
             glyph = null;
         }
 
-        // Outfit is a variable font: weight goes through variation settings, not Typeface.create.
-        Typeface base = ctx.getResources().getFont(R.font.outfit);
-        title.setTypeface(base);
-        title.setFontVariationSettings("'wght' 650");
+        // Fixed-weight font files: variation settings would build a new typeface for every tile.
+        title.setTypeface(ctx.getResources().getFont(R.font.outfit_bold));
         title.setColor(Color.WHITE);
         title.setShadowLayer(6 * density, 0, density, 0x40000000);
-        caption.setTypeface(base);
-        caption.setFontVariationSettings("'wght' 600");
+        caption.setTypeface(ctx.getResources().getFont(R.font.outfit_semibold));
         caption.setColor(0xD9FFFFFF);
         caption.setLetterSpacing(0.14f);
     }

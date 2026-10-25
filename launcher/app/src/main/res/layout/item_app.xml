@@ -45,8 +45,7 @@
         android:includeFontPadding="false"
         android:textColor="@color/text_primary"
         android:textSize="14sp"
-        android:fontFamily="@font/outfit"
-        android:fontVariationSettings="'wght' 500"
+        android:fontFamily="@font/outfit_medium"
         android:shadowColor="@color/photo_text_shadow"
         android:shadowRadius="12"
         android:shadowDy="2" />

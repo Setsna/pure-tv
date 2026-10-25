@@ -41,8 +41,7 @@
         android:singleLine="true"
         android:ellipsize="end"
         android:textSize="13sp"
-        android:fontFamily="@font/outfit"
-        android:fontVariationSettings="'wght' 500" />
+        android:fontFamily="@font/outfit_medium" />
 
     <TextView
         android:id="@+id/pickDocked"
@@ -53,7 +52,6 @@
         android:textSize="10sp"
         android:letterSpacing="0.12"
         android:textAllCaps="true"
-        android:fontFamily="@font/outfit"
-        android:fontVariationSettings="'wght' 600"
+        android:fontFamily="@font/outfit_semibold"
         android:visibility="gone" />
 </LinearLayout>

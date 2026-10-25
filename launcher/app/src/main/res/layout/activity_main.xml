@@ -114,8 +114,7 @@
                         android:format24Hour="EEEE, d MMMM"
                         android:textColor="@color/text_secondary"
                         android:textSize="18sp"
-                        android:fontFamily="@font/outfit"
-                        android:fontVariationSettings="'wght' 500"
+                        android:fontFamily="@font/outfit_medium"
                         android:letterSpacing="0.01" />
                 </LinearLayout>
 
@@ -156,8 +155,7 @@
                         android:drawablePadding="8dp"
                         android:textColor="@color/text_secondary"
                         android:textSize="18sp"
-                        android:fontFamily="@font/outfit"
-                        android:fontVariationSettings="'wght' 500"
+                        android:fontFamily="@font/outfit_medium"
                         android:letterSpacing="0.01" />
 
                     <TextView
@@ -166,8 +164,7 @@
                         android:layout_marginTop="6dp"
                         android:textColor="@color/text_tertiary"
                         android:textSize="11.5sp"
-                        android:fontFamily="@font/outfit"
-                        android:fontVariationSettings="'wght' 500"
+                        android:fontFamily="@font/outfit_medium"
                         android:letterSpacing="0.02" />
                 </LinearLayout>
             </LinearLayout>
@@ -248,8 +245,7 @@
                     android:includeFontPadding="false"
                     android:textColor="@color/text_primary"
                     android:textSize="14sp"
-                    android:fontFamily="@font/outfit"
-                    android:fontVariationSettings="'wght' 500"
+                    android:fontFamily="@font/outfit_medium"
                     android:visibility="invisible" />
             </LinearLayout>
 
@@ -401,8 +397,7 @@
             android:text="MADE BY VARDAN"
             android:textColor="@color/text_quiet"
             android:textSize="8.5sp"
-            android:fontFamily="@font/outfit"
-            android:fontVariationSettings="'wght' 400"
+            android:fontFamily="@font/outfit_regular"
             android:letterSpacing="0.32"
             android:singleLine="true"
             android:importantForAccessibility="no" />
@@ -476,8 +471,7 @@
                     android:format24Hour="EEEE, d MMMM"
                     android:textColor="@color/text_secondary"
                     android:textSize="26sp"
-                    android:fontFamily="@font/outfit"
-                    android:fontVariationSettings="'wght' 500" />
+                    android:fontFamily="@font/outfit_medium" />
 
                 <View
                     android:layout_width="56dp"
@@ -494,8 +488,7 @@
                     android:maxWidth="560dp"
                     android:lineSpacingExtra="4dp"
                     android:textSize="22sp"
-                    android:fontFamily="@font/outfit"
-                    android:fontVariationSettings="'wght' 300" />
+                    android:fontFamily="@font/outfit_light" />
 
                 <TextView
                     android:id="@+id/ssQuoteBy"
@@ -506,8 +499,7 @@
                     android:textSize="12sp"
                     android:letterSpacing="0.14"
                     android:textAllCaps="true"
-                    android:fontFamily="@font/outfit"
-                    android:fontVariationSettings="'wght' 600" />
+                    android:fontFamily="@font/outfit_semibold" />
 
                 <TextView
                     android:id="@+id/ssFestival"
@@ -525,8 +517,7 @@
                     android:singleLine="true"
                     android:textColor="@color/text_primary"
                     android:textSize="15sp"
-                    android:fontFamily="@font/outfit"
-                    android:fontVariationSettings="'wght' 500"
+                    android:fontFamily="@font/outfit_medium"
                     android:visibility="gone" />
             </LinearLayout>
 
@@ -586,8 +577,7 @@
                                 android:includeFontPadding="false"
                                 android:textColor="@color/text_primary"
                                 android:textSize="17sp"
-                                android:fontFamily="@font/outfit"
-                                android:fontVariationSettings="'wght' 600" />
+                                android:fontFamily="@font/outfit_semibold" />
 
                             <TextView
                                 android:id="@+id/ssHighLow"
@@ -597,8 +587,7 @@
                                 android:includeFontPadding="false"
                                 android:textColor="@color/text_secondary"
                                 android:textSize="15sp"
-                                android:fontFamily="@font/outfit"
-                                android:fontVariationSettings="'wght' 500" />
+                                android:fontFamily="@font/outfit_medium" />
                         </LinearLayout>
                     </LinearLayout>
 
@@ -615,8 +604,7 @@
                         android:ellipsize="end"
                         android:textColor="@color/text_secondary"
                         android:textSize="14sp"
-                        android:fontFamily="@font/outfit"
-                        android:fontVariationSettings="'wght' 500" />
+                        android:fontFamily="@font/outfit_medium" />
 
                     <TextView
                         android:id="@+id/ssRain"
@@ -629,8 +617,7 @@
                         android:includeFontPadding="false"
                         android:singleLine="true"
                         android:textSize="14sp"
-                        android:fontFamily="@font/outfit"
-                        android:fontVariationSettings="'wght' 500" />
+                        android:fontFamily="@font/outfit_medium" />
 
                     <TextView
                         android:id="@+id/ssUpdated"
@@ -641,8 +628,7 @@
                         android:singleLine="true"
                         android:textColor="@color/text_tertiary"
                         android:textSize="11.5sp"
-                        android:fontFamily="@font/outfit"
-                        android:fontVariationSettings="'wght' 500" />
+                        android:fontFamily="@font/outfit_medium" />
                 </LinearLayout>
 
                 <!-- Next hours -->
