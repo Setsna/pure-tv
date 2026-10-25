@@ -102,7 +102,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private View btnInputs;
     private TextView btnWifi;
     private TextView btnSettings;
-    private TextView brandMark;
 
     // 3-minute automatic app memory reaper & system speed optimization
     private static final long REAP_POLL_INTERVAL_MS = 30_000L; // Check every 30s
@@ -294,7 +293,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         btnLiveTv = findViewById(R.id.btnLiveTv);
         btnInputs = findViewById(R.id.btnInputs);
         btnSettings = findViewById(R.id.btnSettings);
-        brandMark = findViewById(R.id.brandMark);
         exploreHint = findViewById(R.id.exploreHint);
         shamsiDate = findViewById(R.id.shamsiDate);
         shamsi = false;
@@ -1248,7 +1246,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (ambientDrawable != null && ambientColor != 0) {
             ambientDrawable.updateChromaticField(ambientColor, 0, false);
         }
-        if (brandMark != null) brandMark.setTextColor(getColor(R.color.text_quiet));
         if (exploreHint != null) exploreHint.setVisibility(View.GONE);
 
         // Clock, weather and the control pills draw their own looks from XML (text on the photo,

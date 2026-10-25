@@ -18,8 +18,8 @@ android {
         applicationId 'dev.vardxn.puretv'
         minSdk 26
         targetSdk 34
-        versionCode 8
-        versionName '4.0.3'
+        versionCode 9
+        versionName '4.0.4'
         // Pinned weather location ("lat,lon,City"); empty = detect from the TV's internet connection.
         resValue 'string', 'weather_location', localProps.getProperty('weather.location', '')
     }

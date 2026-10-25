@@ -7,7 +7,6 @@
     <color name="text_primary">#FFFFFF</color>
     <color name="text_secondary">#CBD5E1</color>
     <color name="text_tertiary">#94A3B8</color>
-    <color name="text_quiet">#33F5F5F7</color>              <!-- signature / lowest-priority text -->
     <color name="accent_warm">#E2C799</color>               <!-- AM/PM marker -->
     <color name="focus_fill">#F5F5F7</color>                <!-- focused pill / button fill -->
     <color name="focus_text">#090A0C</color>                <!-- text on focus_fill -->

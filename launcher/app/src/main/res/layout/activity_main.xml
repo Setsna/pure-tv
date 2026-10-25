@@ -385,22 +385,6 @@
                 android:focusable="true"
                 android:overScrollMode="never" />
         </FrameLayout>
-
-        <!-- SUBTLE CORNER SIGNATURE -->
-        <TextView
-            android:id="@+id/brandMark"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="bottom|end"
-            android:layout_marginEnd="@dimen/screen_gutter_h"
-            android:layout_marginBottom="14dp"
-            android:text="MADE BY VARDAN"
-            android:textColor="@color/text_quiet"
-            android:textSize="8.5sp"
-            android:fontFamily="@font/outfit_regular"
-            android:letterSpacing="0.32"
-            android:singleLine="true"
-            android:importantForAccessibility="no" />
     </FrameLayout>
 
     <!-- 3. SCREENSAVER: glass dashboard over the photo. Clock, date and a quote of the day on the
