@@ -1,0 +1,75 @@
+# Philips 70PUH8215/96 (Asia), Android TV 11, firmware RTT2.211108.001 (build 3374, Nov 2022)
+# TP Vision platform: ro.product.model=TPM191E, device/board PH9M_EA_5599, MediaTek, armeabi-v7a,
+# about 2 GB RAM. Philips' own packages use the org.droidtv prefix.
+#
+# Apply:   tools\disable.ps1 -TvHost <tv ip> examples\philips-tpm191e\debloat.txt
+# Undo:    tools\restore.ps1 -TvHost <tv ip> examples\philips-tpm191e\debloat.txt -Stock com.google.android.tvlauncher
+# Everything is DISABLED, not uninstalled. Comment out any line you want to keep.
+#
+# Stock launcher: com.google.android.tvlauncher (Android TV, not Google TV). Only it and Settings'
+# FallbackHome claim HOME; setupwraith is installed but does not.
+# Live TV app: org.droidtv.playtv ("Watch TV").
+# Already disabled from the factory, so not listed (restore would turn them ON): the 16 uk.co.freeview.*
+# and org.droidtv.freeviewplayers packages.
+# Network: built-in Ethernet (eth0); network ADB on 5555 works with USB debugging on, ro.adb.secure=1.
+#
+# Kept on purpose: org.droidtv.playtv / xtv / xtvsystem / channels / epgdata / euinstaller* / ci
+# (Live TV, tuner, guide), com.mediatek.tvinput* / tunerservice (TV inputs), org.droidtv.GlobalKey
+# (remote hot keys), org.droidtv.tvsystemui / settings / tvpowermanagerservice, org.droidtv.contentexplorer
+# + dlna (Media, DLNA by choice), org.droidtv.nettvbrowser (HbbTV), com.google.android.apps.mediashell
+# (Chromecast, by choice), com.phorus.playfi.* (DTS Play-Fi, by choice), org.droidtv.factory / csm / sam
+# (service menus: never launch them), org.droidtv.dukservice (certificate signer), keyboards.
+
+# Telemetry and analytics
+org.droidtv.gel                       # GatheringService: usage data gathering
+org.droidtv.candeebug                 # DAC client: log collection service
+org.droidtv.usagelogger               # logs usage from boot
+org.droidtv.tv.frameworklogger        # framework logger
+org.droidtv.tv.packageinfo            # reports the installed-package list
+com.google.android.feedback
+
+# Content, recommendation and ad services
+org.droidtv.nettvrecommender          # Philips recommendation rows / VOD / TOD providers
+org.droidtv.recommendation            # recommendation loader service
+com.google.android.tvrecommendations
+com.zeasn.whalelive                   # Zeasn content app
+org.droidtv.sticker                   # shop-demo sticker and banner
+org.droidtv.demome                    # "Demo Me" shop demo
+
+# Voice assistants, firmware updates, Ambilight/Hue, phone remote (by choice)
+com.google.android.katniss            # Google Assistant: the remote's mic button stops working
+org.droidtv.amazonalexa               # Alexa
+org.droidtv.oad                       # over-the-air firmware updates
+com.easy.oad                          # remote (BT) firmware OTA
+org.droidtv.ambiair
+org.droidtv.ambihuecommon
+org.droidtv.alhuewizard
+com.google.android.tv.remote.service  # control from the Google TV phone app
+
+# Preloaded and unused apps (by choice)
+com.disney.disneyplus
+com.apple.atve.androidtv.appletv
+com.google.android.youtube.tvmusic
+com.ajnsnewmedia.kitchenstories
+com.iqiyi.i18n.tv
+com.boosteroidtv.streaming
+com.ted.android.tv
+com.google.android.videos
+com.google.android.play.games
+com.vewd.core.browserui               # Internet Browser
+org.droidtv.android.fitness
+org.droidtv.dropboxprovider
+org.droidtv.nettv.market              # App Gallery
+org.droidtv.nettvapps                 # Philips TV Collection
+org.droidtv.philipstvdrawer           # Philips app drawer; its remote key now opens Settings via Pure TV
+org.droidtv.nettv_launcherapp
+org.droidtv.nettvapp1814              # TV Collection web apps (arte, DIVAN.TV, ...)
+org.droidtv.nettvapp4655
+org.droidtv.nettvapp20004410
+org.droidtv.nettvapp4771
+org.droidtv.nettvapp5326
+org.droidtv.nettvapp5512
+
+# Stock home. Disable only after the new launcher is installed and set as home.
+org.droidtv.leanbackcustomizer        # partner config that injects rows into the stock home
+com.google.android.tvlauncher

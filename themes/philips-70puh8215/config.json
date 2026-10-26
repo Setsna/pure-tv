@@ -1,0 +1,22 @@
+{
+  "dock_apps": [
+    "org.smarttube.stable",
+    "com.netflix.ninja",
+    "com.amazon.amazonvideo.livingroom",
+    "com.wbd.stream",
+    "com.spotify.tv.android",
+    "tv.twitch.android.app"
+  ],
+  "hidden_apps": [
+    "com.android.tv.settings",
+    "com.android.vending",
+    "com.google.android.backdrop",
+    "org.droidtv.playtv",
+    "org.droidtv.eum",
+    "dev.vardxn.puretv"
+  ],
+  "live_tv_package": "org.droidtv.playtv",
+  "columns": 6,
+  "rows_below_dock": 0,
+  "module_cards": false
+}
