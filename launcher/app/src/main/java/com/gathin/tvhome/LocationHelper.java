@@ -15,7 +15,7 @@ import java.net.URL;
 /**
  * Where the weather is for. In order: the {@code weather_location} override in config.xml
  * ("lat,lon,City" for viewers whose ISP makes IP lookup land in the wrong city), a location found
- * within the last day, a fresh IP lookup (ipapi.co, no key), any older cached location. With none of
+ * within the last day, a fresh IP lookup (ipapi.co, or ipwho.is when that fails; no key), any older cached location. With none of
  * these the callback gets {@code onError} and the weather simply isn't shown.
  */
 public class LocationHelper {
@@ -61,16 +61,14 @@ public class LocationHelper {
 
         new Thread(() -> {
             try {
-                URL url = new URL("https://ipapi.co/json/");
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setConnectTimeout(4000);
-                conn.setReadTimeout(4000);
-                StringBuilder sb = new StringBuilder();
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
-                    String line;
-                    while ((line = reader.readLine()) != null) sb.append(line);
+                JSONObject json;
+                try {
+                    json = fetchJson("https://ipapi.co/json/");
+                } catch (Exception e) {
+                    // ipapi.co answers 429 to whole ISPs at times; ipwho.is is the same kind of lookup.
+                    json = fetchJson("https://ipwho.is/");
+                    if (!json.optBoolean("success", false)) throw new Exception("ipwho.is: no location");
                 }
-                JSONObject json = new JSONObject(sb.toString());
                 double lat = json.getDouble("latitude");
                 double lon = json.getDouble("longitude");
                 prefs.edit()
@@ -85,6 +83,18 @@ public class LocationHelper {
                 else main.post(cb::onError);
             }
         }).start();
+    }
+
+    private static JSONObject fetchJson(String address) throws Exception {
+        HttpURLConnection conn = (HttpURLConnection) new URL(address).openConnection();
+        conn.setConnectTimeout(4000);
+        conn.setReadTimeout(4000);
+        StringBuilder sb = new StringBuilder();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+            String line;
+            while ((line = reader.readLine()) != null) sb.append(line);
+        }
+        return new JSONObject(sb.toString());
     }
 
     /** "lat,lon[,City]" → {lat, lon}, or null when empty or malformed. */

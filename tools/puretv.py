@@ -38,7 +38,7 @@ STOCK_LAUNCHERS = [
 ]
 ADGUARD_DNS = "dns.adguard-dns.com"
 SMARTTUBE_REPO = "yuliskov/SmartTube"
-SMARTTUBE_PKG = "com.liskovsoft.smarttubetv.beta"
+SMARTTUBE_PKG = "org.smarttube.stable"   # the stable APK picked below; beta is com.liskovsoft.smarttubetv.beta
 
 STATE_HOME = os.path.expanduser("~/.puretv")
 BACKUPS = os.path.expanduser("~/PureTV-backups")

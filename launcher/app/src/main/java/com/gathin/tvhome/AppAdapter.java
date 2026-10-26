@@ -127,6 +127,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         this.listener = listener;
         this.dockSize = dockSize;
         this.hidden = new HashSet<>(cfg.hiddenApps);
+        if (cfg.themeDock) DockPrefs.applyThemeDock(ctx, cfg.dockApps);
         this.favourites = new ArrayList<>(DockPrefs.loadDock(ctx));
         this.showHomeSettings = cfg.showHomeSettingsShortcut;
         // Tiles keep their identity across reload(), so a focused tile stays on its app instead of

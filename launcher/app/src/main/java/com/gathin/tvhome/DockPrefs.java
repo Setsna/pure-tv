@@ -2,6 +2,7 @@ package com.gathin.tvhome;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -58,6 +59,30 @@ public class DockPrefs {
     }
 
     private static final String KEY_REVISION = "dock_revision";
+    private static final String KEY_THEME_DOCK = "theme_dock";
+
+    /**
+     * A theme's dock_apps (config.json) replaces the saved dock once, each time the theme's list
+     * changes; edits made on the TV afterwards are kept until the next different list. Apps that
+     * aren't installed are skipped, and a list with none installed changes nothing.
+     */
+    public static void applyThemeDock(Context ctx, List<String> themeDock) {
+        SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        String key = String.join(",", themeDock);
+        if (key.equals(prefs.getString(KEY_THEME_DOCK, null))) return;
+        List<String> dock = new ArrayList<>();
+        for (String pkg : themeDock) {
+            if (dock.size() >= SLOT_COUNT || dock.contains(pkg)) continue;
+            try {
+                if (ctx.getPackageManager().getApplicationInfo(pkg, 0).enabled) dock.add(pkg);
+            } catch (PackageManager.NameNotFoundException ignored) {}
+        }
+        if (!dock.isEmpty()) {
+            saveDock(ctx, dock);
+            prefs.edit().putInt(KEY_SCHEMA, CURRENT_SCHEMA).apply();
+        }
+        prefs.edit().putString(KEY_THEME_DOCK, key).apply();
+    }
 
     /** Bumped on every dock edit, so the home screen knows to rebuild its tiles. */
     public static int revision(Context ctx) {

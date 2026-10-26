@@ -70,6 +70,20 @@
             android:excludeFromRecents="true"
             android:theme="@android:style/Theme.NoDisplay" />
 
+        <!-- Philips/TP Vision remotes: the app-drawer key arrives as this intent from the firmware's
+             GlobalKey service. With org.droidtv.philipstvdrawer disabled it opens Settings instead. -->
+        <activity
+            android:name=".SettingsKeyActivity"
+            android:exported="true"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.NoDisplay">
+            <intent-filter>
+                <action android:name="org.droidtv.leanbackcustomizer.PhilipsDrawer" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
         <activity
             android:name=".DockEditorActivity"
             android:exported="false"
